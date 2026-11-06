@@ -1,0 +1,3272 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>어통조아</title>
+  <!-- 어통조아 V11.0 - 변경 내역은 Code.gs의 UPDATE_LOG_ / 시트의 '업데이트로그' 탭 참고 -->
+
+  <!-- 홈 화면에 추가했을 때 표시되는 이름/아이콘 설정 -->
+  <meta name="application-name" content="어통조아">
+  <meta name="apple-mobile-web-app-title" content="어통조아">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="theme-color" content="#1D3557">
+  <link rel="preload" as="image" href="images/header.jpg">
+  <!-- PWA 매니페스트 (홈 화면에 추가) -->
+  <link rel="manifest" href="manifest.json">
+
+  <!-- 아이콘 -->
+  <link rel="icon" type="image/png" href="icons/favicon-32.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon.png">
+
+  <!-- 외부 라이브러리 -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+  <style>
+    :root {
+      --awana-sparks: #DC3545;  
+      --awana-tnt: #198754;     
+      --awana-teacher: #6C757D; 
+      --awana-blue: #1D3557;    
+      --awana-yellow: #FFB703;
+      --awana-bg: #F8F9FA;
+
+      --ot-color: #00A896;         
+      --nt-color: #E66767;         
+      --read-green: #68C496;       
+
+      /* 파스텔톤 완독/체크 포인트 색상 */
+      --cat-bg-모세오경: #E8F5E9; --cat-text-모세오경: #1B5E20; --cat-point-모세오경: #81C784;
+      --cat-bg-역사서: #E3F2FD; --cat-text-역사서: #0D47A1; --cat-point-역사서: #64B5F6;
+      --cat-bg-시가서: #FFFDE7; --cat-text-시가서: #F57F17; --cat-point-시가서: #FFD54F;
+      --cat-bg-예언서: #F3E5F5; --cat-text-예언서: #4A148C; --cat-point-예언서: #BA68C8;
+      --cat-bg-복음서: #FBE9E7; --cat-text-복음서: #BF360C; --cat-point-복음서: #FF8A65;
+      --cat-bg-사도행전: #E0F7FA; --cat-text-사도행전: #006064; --cat-point-사도행전: #4DD0E1;
+      --cat-bg-서신서: #EDE7F6; --cat-text-서신서: #311B92; --cat-point-서신서: #9575CD;
+      --cat-bg-계시록: #FCE4EC; --cat-text-계시록: #880E4F; --cat-point-계시록: #F06292;
+
+      --pt-ot-main: #E0F2F1;
+      --pt-nt-main: #FFEBEE;
+
+      /* 탭 및 입력폼 파스텔톤 색상 추가 */
+      --auth-pastel-login: #E3F2FD;
+      --auth-pastel-login-active: #1976D2;
+      --auth-pastel-reg: #E8F5E9;
+      --auth-pastel-reg-active: #388E3C;
+      --auth-pastel-admin: #FFF3E0;
+      --auth-pastel-admin-active: #F57C00;
+    }
+    body {
+      background-color: #F4F7F6;
+      font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      color: #333;
+    }
+
+    /* 4. 헤더 크기 및 비율 개선 + 스크롤해도 상단 고정 */
+    .header-box {
+      padding: 0;
+      overflow: hidden;
+      border-radius: 12px;
+      box-shadow: 0 3px 10px rgba(0,0,0,0.08);
+      position: sticky;
+      top: 0;
+      z-index: 1030;
+      line-height: 0;
+    }
+    .header-box img {
+      width: 100%;
+      height: auto;
+      display: block;
+      cursor: pointer;
+    }
+
+    .card-custom {
+      border: none;
+      border-radius: 16px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+      background: white;
+    }
+
+    /* 2. 로그인, 신규등록, 관리자 탭 파스텔 배경 및 클릭 시 변경 디자인 */
+    .auth-nav-pill .nav-link {
+      font-weight: 700;
+      border-radius: 10px;
+      padding: 10px;
+      transition: all 0.2s ease;
+      color: #555;
+    }
+    #tabLogin {
+      background-color: var(--auth-pastel-login);
+      color: #1565C0;
+    }
+    #tabLogin.active {
+      background-color: var(--auth-pastel-login-active) !important;
+      color: white !important;
+    }
+    #tabRegister {
+      background-color: var(--auth-pastel-reg);
+      color: #2E7D32;
+    }
+    #tabRegister.active {
+      background-color: var(--auth-pastel-reg-active) !important;
+      color: white !important;
+    }
+    #tabAdmin {
+      background-color: var(--auth-pastel-admin);
+      color: #E65100;
+    }
+    #tabAdmin.active {
+      background-color: var(--auth-pastel-admin-active) !important;
+      color: white !important;
+    }
+
+    /* 3. 소속, 이름, 비밀번호 입력영역 스타일 개선 */
+    .form-custom-card {
+      background-color: #FAFBFD;
+      border: 1px solid #E2E8F0;
+      border-radius: 12px;
+      padding: 14px;
+      margin-bottom: 14px;
+    }
+    .form-custom-label {
+      font-weight: 700;
+      font-size: 0.9rem;
+      margin-bottom: 6px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .form-control-styled, .form-select-styled {
+      border-radius: 8px;
+      border: 1px solid #CBD5E1;
+      padding: 10px 12px;
+      font-size: 0.95rem;
+      background-color: #FFFFFF;
+    }
+    .form-control-styled:focus, .form-select-styled:focus {
+      border-color: #457B9D;
+      box-shadow: 0 0 0 3px rgba(69, 123, 157, 0.15);
+    }
+
+    .btn-awana {
+      background-color: var(--awana-sparks);
+      color: white;
+      font-weight: bold;
+      border-radius: 12px;
+      padding: 12px;
+    }
+    .btn-awana:hover {
+      background-color: #BB2D3B;
+      color: white;
+    }
+    .nav-pills .nav-link.active {
+      background-color: var(--awana-blue);
+    }
+    
+    .badge-group-스팍스 { background-color: var(--awana-sparks) !important; color: white; }
+    .badge-group-티앤티 { background-color: var(--awana-tnt) !important; color: white; }
+    .badge-group-선생님 { background-color: var(--awana-teacher) !important; color: white; }
+
+    #userGroup.group-스팍스 { background-color: #F8D7DA; color: #842029; font-weight: bold; }
+    #userGroup.group-티앤티 { background-color: #D1E7DD; color: #0F5132; font-weight: bold; }
+    #userGroup.group-선생님 { background-color: #E2E3E5; color: #41464B; font-weight: bold; }
+
+    /* 통독핀 카드 */
+    .pin-compact-card {
+      border-radius: 6px;
+      padding: 3px 2px;
+      font-size: 0.68rem;
+      font-weight: bold;
+      text-align: center;
+      transition: all 0.2s;
+      min-height: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      word-break: keep-all;
+      line-height: 1.1;
+    }
+    .pin-bg-unearned { background-color: #E9ECEF; color: #6C757D; } 
+    .pin-bg-eligible { background-color: #FFD166; color: #000000; box-shadow: 0 0 5px rgba(255,183,3,0.5); } 
+    .pin-bg-granted { background-color: var(--read-green); color: #FFFFFF; } 
+
+    /* 구약/신약 성경 권 가로 5개 그리드 */
+    .book-grid-mobile {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 5px;
+    }
+    .book-card-mobile {
+      border: 1px solid #DEE2E6;
+      border-radius: 6px;
+      padding: 6px 1px;
+      text-align: center;
+      background-color: #FFFFFF;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 0.68rem;
+      color: #333;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+      word-break: keep-all;
+      line-height: 1.1;
+      height: 48px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      transition: all 0.15s ease-in-out;
+    }
+    .book-card-name {
+      font-size: 0.68rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 100%;
+      letter-spacing: -0.5px;
+    }
+    .book-card-mobile.active-book { border: 2.5px solid var(--awana-yellow) !important; }
+
+    /* 부드러운 완독 색상 */
+    .book-card-모세오경 { background-color: var(--cat-bg-모세오경); color: var(--cat-text-모세오경); border-color: #C8E6C9; }
+    .book-card-모세오경.completed-book { background-color: var(--cat-point-모세오경) !important; color: #FFF !important; }
+
+    .book-card-역사서 { background-color: var(--cat-bg-역사서); color: var(--cat-text-역사서); border-color: #BBDEFB; }
+    .book-card-역사서.completed-book { background-color: var(--cat-point-역사서) !important; color: #FFF !important; }
+
+    .book-card-시가서 { background-color: var(--cat-bg-시가서); color: var(--cat-text-시가서); border-color: #FFF59D; }
+    .book-card-시가서.completed-book { background-color: var(--cat-point-시가서) !important; color: #333 !important; font-weight: bold; }
+
+    .book-card-예언서 { background-color: var(--cat-bg-예언서); color: var(--cat-text-예언서); border-color: #E1BEE7; }
+    .book-card-예언서.completed-book { background-color: var(--cat-point-예언서) !important; color: #FFF !important; }
+
+    .book-card-복음서 { background-color: var(--cat-bg-복음서); color: var(--cat-text-복음서); border-color: #FFCCBC; }
+    .book-card-복음서.completed-book { background-color: var(--cat-point-복음서) !important; color: #FFF !important; }
+
+    .book-card-사도행전 { background-color: var(--cat-bg-사도행전); color: var(--cat-text-사도행전); border-color: #B2EBF2; }
+    .book-card-사도행전.completed-book { background-color: var(--cat-point-사도행전) !important; color: #FFF !important; }
+
+    .book-card-서신서 { background-color: var(--cat-bg-서신서); color: var(--cat-text-서신서); border-color: #D1C4E9; }
+    .book-card-서신서.completed-book { background-color: var(--cat-point-서신서) !important; color: #FFF !important; }
+
+    .book-card-계시록 { background-color: var(--cat-bg-계시록); color: var(--cat-text-계시록); border-color: #F8BBD0; }
+    .book-card-계시록.completed-book { background-color: var(--cat-point-계시록) !important; color: #FFF !important; }
+
+    /* 장 체크 버튼: 가로 7개 */
+    .chapter-grid-7 {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 4px;
+    }
+    .chapter-btn-box {
+      width: 100%;
+      height: 42px;
+      font-weight: bold;
+      border-radius: 6px;
+      border: 1px solid #DEE2E6;
+      background-color: #FFF;
+      color: #495057;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 1px;
+      cursor: pointer;
+    }
+    .chapter-num { font-size: 0.82rem; line-height: 1; }
+    .chapter-date { font-size: 0.58rem; opacity: 0.9; margin-top: 2px; }
+
+    .chapter-btn-box.chapter-locked {
+      cursor: not-allowed;
+      opacity: 0.75;
+      position: relative;
+    }
+    .chapter-lock-icon {
+      position: absolute;
+      top: 2px;
+      right: 3px;
+      font-size: 0.55rem;
+      color: rgba(0,0,0,0.5);
+    }
+    .chapter-btn-box.chapter-locked.read .chapter-lock-icon {
+      color: rgba(255,255,255,0.85);
+    }
+
+    .recent-highlight {
+      outline: 3px solid #FF7043;
+      outline-offset: 2px;
+      animation: recentPulse 0.6s ease-in-out 2;
+      z-index: 2;
+      position: relative;
+    }
+    @keyframes recentPulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.12); }
+    }
+
+    .pin-request-alert {
+      background: linear-gradient(135deg, #FFF3CD, #FFE8A1);
+      border: 1px solid #FFD666;
+      border-radius: 10px;
+      padding: 10px 14px;
+      margin-bottom: 12px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: #7A5A00;
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+    }
+    .pin-request-alert i {
+      margin-top: 2px;
+      flex-shrink: 0;
+    }
+    .pin-request-alert span {
+      flex: 1;
+      line-height: 1.4;
+      word-break: keep-all;
+      overflow-wrap: break-word;
+    }
+    .pin-request-alert + .pin-request-alert {
+      margin-top: -6px;
+    }
+
+    .chapter-theme-모세오경.read { background-color: var(--cat-point-모세오경); color: white; border-color: var(--cat-point-모세오경); }
+    .chapter-theme-역사서.read { background-color: var(--cat-point-역사서); color: white; border-color: var(--cat-point-역사서); }
+    .chapter-theme-시가서.read { background-color: var(--cat-point-시가서); color: #333; border-color: var(--cat-point-시가서); }
+    .chapter-theme-예언서.read { background-color: var(--cat-point-예언서); color: white; border-color: var(--cat-point-예언서); }
+    .chapter-theme-복음서.read { background-color: var(--cat-point-복음서); color: white; border-color: var(--cat-point-복음서); }
+    .chapter-theme-사도행전.read { background-color: var(--cat-point-사도행전); color: white; border-color: var(--cat-point-사도행전); }
+    .chapter-theme-서신서.read { background-color: var(--cat-point-서신서); color: white; border-color: var(--cat-point-서신서); }
+    .chapter-theme-계시록.read { background-color: var(--cat-point-계시록); color: white; border-color: var(--cat-point-계시록); }
+
+    .progress-title { font-size: 0.8rem; font-weight: bold; color: #6C757D; }
+    .sub-ratio { font-size: 0.78rem; color: #6C757D; font-weight: 600; }
+    .text-ot { color: var(--ot-color) !important; }
+    .text-nt { color: var(--nt-color) !important; }
+
+    .category-filter-btn {
+      font-size: 0.75rem;
+      padding: 4px 10px;
+      border-radius: 8px;
+      border: 1px solid #CED4DA;
+      background: #FFFFFF;
+      color: #495057;
+      font-weight: 600;
+      white-space: nowrap;
+      transition: all 0.2s;
+    }
+    .category-filter-btn.cat-전체.active { background-color: var(--awana-blue); color: white; border-color: var(--awana-blue); }
+    .category-filter-btn.cat-모세오경.active { background-color: var(--cat-bg-모세오경); color: var(--cat-text-모세오경); border-color: #81C784; }
+    .category-filter-btn.cat-역사서.active { background-color: var(--cat-bg-역사서); color: var(--cat-text-역사서); border-color: #64B5F6; }
+    .category-filter-btn.cat-시가서.active { background-color: var(--cat-bg-시가서); color: var(--cat-text-시가서); border-color: #FFF176; }
+    .category-filter-btn.cat-예언서.active { background-color: var(--cat-bg-예언서); color: var(--cat-text-예언서); border-color: #BA68C8; }
+    .category-filter-btn.cat-복음서.active { background-color: var(--cat-bg-복음서); color: var(--cat-text-복음서); border-color: #FF8A65; }
+    .category-filter-btn.cat-사도행전.active { background-color: var(--cat-bg-사도행전); color: var(--cat-text-사도행전); border-color: #4DD0E1; }
+    .category-filter-btn.cat-서신서.active { background-color: var(--cat-bg-서신서); color: var(--cat-text-서신서); border-color: #9575CD; }
+    .category-filter-btn.cat-계시록.active { background-color: var(--cat-bg-계시록); color: var(--cat-text-계시록); border-color: #F06292; }
+
+    .nav-tabs .nav-link.tab-ot.active { background-color: var(--pt-ot-main) !important; color: #00695C !important; border-color: #B2DFDB #B2DFDB transparent !important; }
+    .nav-tabs .nav-link.tab-nt.active { background-color: var(--pt-nt-main) !important; color: #C62828 !important; border-color: #FFCDD2 #FFCDD2 transparent !important; }
+
+    /* 관리자 모드 네모 버튼형 필터 */
+    .admin-filter-group {
+      display: flex;
+      gap: 6px;
+      width: 100%;
+    }
+    .admin-filter-btn {
+      flex: 1;
+      padding: 7px 2px;
+      text-align: center;
+      border: 1px solid #CED4DA;
+      border-radius: 8px;
+      font-size: 0.8rem;
+      font-weight: bold;
+      background: #FFFFFF;
+      color: #495057;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .admin-filter-btn.active {
+      background-color: var(--awana-blue);
+      color: white;
+      border-color: var(--awana-blue);
+    }
+    .admin-filter-btn.btn-filter-스팍스.active { background-color: var(--awana-sparks); border-color: var(--awana-sparks); color: white; }
+    .admin-filter-btn.btn-filter-티앤티.active { background-color: var(--awana-tnt); border-color: var(--awana-tnt); color: white; }
+    .admin-filter-btn.btn-filter-선생님.active { background-color: var(--awana-teacher); border-color: var(--awana-teacher); color: white; }
+
+    .admin-user-card {
+      border: 1px solid #E9ECEF;
+      border-radius: 12px;
+      background: #FFFFFF;
+      margin-bottom: 12px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.03);
+      overflow: hidden;
+    }
+    .admin-user-card-top {
+      padding: 8px 12px;
+      background-color: #FAFBFB;
+      border-bottom: 1px solid #F1F3F5;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .admin-user-card-bottom {
+      padding: 10px 12px;
+    }
+    .admin-pin-chip {
+      border-radius: 6px;
+      padding: 3px 4px;
+      font-size: 0.72rem;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 4px;
+    }
+
+    .admin-user-name {
+      font-size: 0.95rem;
+      font-weight: bold;
+      color: #212529;
+    }
+    .admin-user-stat-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .btn-stat-large {
+      font-size: 0.78rem !important;
+      padding: 4px 10px !important;
+      font-weight: bold;
+      border-radius: 6px;
+    }
+    .btn-del-small {
+      font-size: 0.65rem !important;
+      padding: 2px 5px !important;
+      border-radius: 4px;
+      opacity: 0.8;
+    }
+
+    /* 통계 카드 높이 줄임 */
+    .period-stat-card {
+      background: #F8F9FA;
+      border-radius: 8px;
+      padding: 4px 2px;
+      text-align: center;
+      border: 1px solid #E9ECEF;
+    }
+    .period-stat-val {
+      font-size: 1rem;
+      font-weight: 800;
+      color: var(--awana-blue);
+      line-height: 1.2;
+    }
+    .period-stat-lbl {
+      font-size: 0.68rem;
+      color: #6C757D;
+      font-weight: bold;
+    }
+
+    .month-grid-4 {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 6px;
+    }
+    /* 월별 카드 높이 줄임 */
+    .month-stat-card {
+      border: 1px solid #DEE2E6;
+      border-radius: 6px;
+      padding: 3px 2px;
+      text-align: center;
+      background: #FFFFFF;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .month-stat-card:hover { background-color: #F1F3F5; }
+    .month-stat-card.active {
+      background-color: var(--awana-blue) !important;
+      color: #FFFFFF !important;
+      border-color: var(--awana-blue) !important;
+    }
+    .month-stat-card.active .month-badge {
+      background-color: #FFFFFF !important;
+      color: var(--awana-blue) !important;
+    }
+
+    /* 달력 셀 높이 줄임 */
+    .calendar-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 3px;
+    }
+    .calendar-header-cell {
+      text-align: center;
+      font-size: 0.72rem;
+      font-weight: bold;
+      padding: 3px 0;
+      color: #495057;
+      background-color: #E9ECEF;
+      border-radius: 4px;
+    }
+    .calendar-header-cell.sun { color: #DC3545; }
+    .calendar-header-cell.sat { color: #0D6EFD; }
+    .calendar-day-cell {
+      min-height: 29px;
+      border: 1px solid #DEE2E6;
+      border-radius: 5px;
+      padding: 1px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      background-color: #FFFFFF;
+    }
+    .calendar-day-cell.empty {
+      background-color: transparent;
+      border: none;
+    }
+    .calendar-day-cell.has-read {
+      background-color: #E8F8F5;
+      border-color: var(--ot-color);
+    }
+    .cal-day-num {
+      font-size: 0.65rem;
+      line-height: 1;
+      font-weight: 600;
+    }
+    .cal-read-badge {
+      font-size: 0.55rem;
+      font-weight: bold;
+      color: white;
+      background-color: var(--ot-color);
+      border-radius: 3px;
+      padding: 1px 2px;
+      margin-top: 1px;
+      line-height: 1;
+    }
+
+    .admin-nav-pill {
+      gap: 4px;
+    }
+    .admin-nav-pill .nav-link {
+      white-space: nowrap;
+      padding: 10px 4px;
+      font-size: 1.23rem;
+      border: 2px solid transparent;
+    }
+    #adminTabUsers { border-color: #B2DFDB; }
+    #adminTabPendingPins { border-color: #FFE0B2; }
+    #adminTabWeekly { border-color: #C5CAE9; }
+    @media (max-width: 400px) {
+      .admin-nav-pill .nav-link {
+        font-size: 1.08rem;
+        padding: 10px 2px;
+      }
+    }
+
+    .stats-name-highlight {
+      background: linear-gradient(135deg, #FFE0EC, #E0F0FF);
+      color: #6D4C91;
+      font-weight: 800;
+      padding: 2px 10px;
+      border-radius: 8px;
+      margin-right: 2px;
+      display: inline-block;
+    }
+
+    /* 플로팅 안내 메시지 (토스트): 화면 아래 가운데에 잠깐 떴다가 사라진다 */
+    .app-toast-container {
+      position: fixed;
+      left: 50%;
+      bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+      transform: translateX(-50%);
+      z-index: 2000;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      width: min(calc(100vw - 32px), 420px);
+      pointer-events: none;
+    }
+    .app-toast {
+      pointer-events: auto;
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 12px 12px 12px 14px;
+      border-radius: 12px;
+      background: #1D3557;
+      color: #FFFFFF;
+      font-size: 0.88rem;
+      font-weight: 600;
+      line-height: 1.45;
+      word-break: keep-all;
+      overflow-wrap: break-word;
+      white-space: pre-line;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.18);
+      opacity: 0;
+      transform: translateY(12px);
+      transition: opacity 0.2s ease, transform 0.2s ease;
+    }
+    .app-toast.show { opacity: 1; transform: none; }
+    .app-toast > i { margin-top: 2px; flex-shrink: 0; }
+    .app-toast-msg { flex: 1; }
+    .app-toast-close {
+      background: none;
+      border: none;
+      color: inherit;
+      opacity: 0.7;
+      font-size: 1.1rem;
+      line-height: 1;
+      padding: 0 2px;
+      flex-shrink: 0;
+    }
+    .app-toast-success { background: #2E7D32; }
+    .app-toast-error   { background: #C62828; }
+    .app-toast-warning { background: #FFB703; color: #3D2C00; }
+    .app-toast-info    { background: #1D3557; }
+
+    /* 지난 기록 입력: 아직 저장하지 않은 변경은 점선 테두리로 표시 */
+    .chapter-btn-box.pending-add { outline: 2px dashed #198754; outline-offset: -2px; }
+    .chapter-btn-box.pending-remove { outline: 2px dashed #DC3545; outline-offset: -2px; opacity: 0.6; }
+
+    /* 앱 내부 확인/입력 창 (다른 창 위에 뜰 수 있도록 더 위에 표시) */
+    #appDialogModal { z-index: 1080; }
+    #appDialogMessage {
+      white-space: pre-line;
+      word-break: keep-all;
+      overflow-wrap: break-word;
+      font-size: 0.95rem;
+      line-height: 1.5;
+    }
+
+    .welcome-banner {
+      background: linear-gradient(135deg, #E0F2FE, #F0FDF4);
+      border: 1px solid #BAE6FD;
+      border-radius: 12px;
+      padding: 10px 14px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: #0369A1;
+      margin-bottom: 12px;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container mb-5 mt-2" style="max-width: 800px; padding: 0 10px;">
+
+    <!-- 4. 헤더: 아래 컨테이너 폭과 동일하게 맞춤 -->
+    <div class="header-box mb-3">
+      <img src="images/header.jpg" onclick="goToHomeScreen()" alt="어통조아 - SYDC 어와나클럽 성경 통독표" title="첫 화면으로 이동">
+    </div>
+
+    <!-- 1. 로그인/등록 화면 -->
+    <div id="authSection" class="card card-custom p-3 p-md-4">
+      <!-- 2. 파스텔톤 배경 탭 -->
+      <ul class="nav nav-pills nav-fill mb-3 auth-nav-pill gap-2" id="authTab">
+        <li class="nav-item">
+          <button class="nav-link active" id="tabLogin" onclick="switchAuthMode('login')">
+            <i class="fa-solid fa-right-to-bracket me-1"></i>로그인
+          </button>
+        </li>
+        <li class="nav-item">
+          <button class="nav-link" id="tabRegister" onclick="switchAuthMode('register')">
+            <i class="fa-solid fa-user-plus me-1"></i>신규 등록
+          </button>
+        </li>
+        <li class="nav-item">
+          <button class="nav-link" id="tabAdmin" onclick="switchAuthMode('admin')">
+            <i class="fa-solid fa-lock me-1"></i>관리자
+          </button>
+        </li>
+      </ul>
+
+      <!-- 3. 예쁘게 디자인 개선된 소속, 이름, 비밀번호 입력 영역 -->
+      <form id="authForm" onsubmit="handleAuth(event)">
+        <div class="form-custom-card">
+          
+          <div class="mb-3" id="groupSelectGroup" style="display:none;">
+            <label class="form-custom-label text-primary">
+              <i class="fa-solid fa-users text-primary"></i>소속
+            </label>
+            <select id="userGroup" class="form-select form-select-styled group-스팍스 fw-bold" onchange="updateGroupSelectColor(this)" required>
+              <option value="스팍스" class="text-danger fw-bold">스팍스 (Sparks)</option>
+              <option value="티앤티" class="text-success fw-bold">티앤티 (T&T)</option>
+              <option value="선생님" class="text-secondary fw-bold">선생님</option>
+            </select>
+          </div>
+
+          <div class="mb-3" id="nameGroup">
+            <label class="form-custom-label text-success">
+              <i class="fa-solid fa-user text-success"></i>이름
+            </label>
+            <input type="text" id="userName" class="form-control form-control-styled fw-bold" placeholder="이름을 입력하세요">
+          </div>
+
+          <div>
+            <label class="form-custom-label text-danger" id="pwLabel">
+              <i class="fa-solid fa-key text-danger"></i>비밀번호 (숫자 4자리 ~ 8자리)
+            </label>
+            <input type="password" id="userPw" inputmode="numeric" pattern="[0-9]*" maxlength="8" class="form-control form-control-styled fw-bold" placeholder="비밀번호 입력" required>
+            <div class="form-text text-muted" id="pwHelpText" style="font-size:0.75rem; margin-top:4px;">
+              숫자로만 입력해주세요
+            </div>
+          </div>
+
+        </div>
+
+        <button type="submit" class="btn btn-awana w-100 btn-lg shadow-sm" id="authSubmitBtn">로그인</button>
+      </form>
+    </div>
+
+    <!-- 2. 사용자 모드 메인 -->
+    <div id="userMainSection" style="display:none;">
+      
+      <div class="welcome-banner d-flex align-items-center">
+        <i class="fa-solid fa-seedling me-2 text-success fs-5"></i>
+        <span>샬롬~ 읽은 성경 장수를 표시해 주세요.</span>
+      </div>
+
+      <!-- 내 프로필 & 상단 바 -->
+      <div class="card card-custom p-3 mb-3">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <div class="d-flex align-items-center gap-2">
+            <span class="badge" id="dispGroup">스팍스</span>
+            <h4 class="d-inline mb-0 fw-bold" id="dispName">홍길동</h4>
+            <button class="btn btn-outline-primary btn-sm px-2 py-1 fw-bold ms-1" onclick="toggleUserStatsModal()" style="font-size:0.78rem;">
+              <i class="fa-solid fa-chart-pie me-1"></i>통계
+            </button>
+          </div>
+          <div>
+            <button class="btn btn-outline-danger btn-sm" onclick="confirmLogout()"><i class="fa-solid fa-right-from-bracket"></i></button>
+          </div>
+        </div>
+
+        <button type="button" class="btn p-0 border-0 bg-transparent w-100 d-flex justify-content-center align-items-center gap-1" onclick="toggleReadingStats()" id="readingStatsToggleBtn" style="color:#6C757D; font-size:0.78rem; font-weight:600;">
+          <span>구약 / 신약 / 신구약 통독 비율</span>
+          <i class="fa-solid fa-chevron-down" id="readingStatsChevron"></i>
+        </button>
+
+        <div id="readingStatsWrapper" style="display:none;">
+          <div class="row text-center my-2 g-1">
+            <div class="col-4">
+              <div class="progress-title">구약</div>
+              <h5 class="fw-bold text-ot mt-1 mb-0" id="otPercent">0%</h5>
+              <div class="sub-ratio" id="otRatio">0 / 929장</div>
+            </div>
+            <div class="col-4">
+              <div class="progress-title">신약</div>
+              <h5 class="fw-bold text-nt mt-1 mb-0" id="ntPercent">0%</h5>
+              <div class="sub-ratio" id="ntRatio">0 / 260장</div>
+            </div>
+            <div class="col-4">
+              <div class="progress-title">신구약</div>
+              <h5 class="fw-bold text-danger mt-1 mb-0" id="totalPercent">0%</h5>
+              <div class="sub-ratio" id="totalRatio">0 / 1189장</div>
+            </div>
+          </div>
+
+          <div class="progress mt-2" style="height: 10px;">
+            <div id="totalProgressBar" class="progress-bar bg-warning progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 완독핀 요청 안내 배너 -->
+      <div id="pinRequestBanner"></div>
+
+      <!-- 성경 통독핀 현황 -->
+      <div class="card card-custom p-3 mb-3">
+        <button type="button" class="btn p-0 border-0 bg-transparent w-100 d-flex justify-content-between align-items-center" onclick="togglePinDashboard()" id="pinDashboardToggleBtn">
+          <h6 class="fw-bold mb-0"><i class="fa-solid fa-award text-warning me-1"></i>성경 통독핀</h6>
+          <i class="fa-solid fa-chevron-down text-muted" id="pinDashboardChevron"></i>
+        </button>
+        <div id="pinDashboardWrapper" style="display:none;">
+          <div class="d-flex justify-content-end my-2">
+            <span class="text-muted" style="font-size: 0.68rem;">
+              <span class="badge bg-secondary">완독 전</span>
+              <span class="badge bg-warning text-dark">핀 수령 전</span>
+              <span class="badge" style="background-color: var(--read-green);">핀 수령</span>
+            </span>
+          </div>
+          <div class="d-flex flex-column gap-1" id="pinDashboard"></div>
+        </div>
+      </div>
+
+      <!-- 성경 읽기표 Card -->
+      <div class="card card-custom p-3">
+        <ul class="nav nav-tabs nav-fill mb-2" id="testamentTab">
+          <li class="nav-item">
+            <button class="nav-link tab-ot active fw-bold" id="btnTabOT" onclick="switchTestament('OT')">구약 (39권)</button>
+          </li>
+          <li class="nav-item">
+            <button class="nav-link tab-nt fw-bold" id="btnTabNT" onclick="switchTestament('NT')">신약 (27권)</button>
+          </li>
+        </ul>
+
+        <div class="d-flex flex-wrap gap-1 mb-2" id="subCategoryFilters"></div>
+
+        <div class="mb-3">
+          <div id="booksGrid" class="book-grid-mobile"></div>
+        </div>
+
+        <!-- 성경 세부 장 체크 영역 -->
+        <div id="chapterDetailSection" class="p-2 border rounded bg-light" style="display:none;">
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <div>
+              <h6 class="fw-bold d-inline me-1 mb-0" id="selectedBookTitle">창세기</h6>
+              <span class="badge bg-secondary small" id="bookProgressText">0 / 50장</span>
+            </div>
+            <div>
+              <button class="btn btn-xs btn-outline-primary me-1 py-1 px-2" id="selectAllBtn" onclick="toggleSelectAllCurrentBook()" style="font-size:0.75rem;">전체 선택</button>
+              <button class="btn btn-xs btn-outline-secondary py-1 px-2" onclick="closeChapterDetail()" style="font-size:0.75rem;"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+          </div>
+
+          <div id="chapterGrid" class="chapter-grid-7"></div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- 3. 관리자 모드 -->
+    <div id="adminMainSection" style="display:none;">
+      <div class="card card-custom p-3 mb-3">
+        <div class="d-flex justify-content-between align-items-center mb-2 flex-nowrap">
+          <h5 class="fw-bold mb-0 text-truncate" style="font-size:1rem;"><i class="fa-solid fa-user-shield text-danger me-1"></i>관리자 모드</h5>
+          <div class="d-flex gap-1 flex-shrink-0">
+            <button class="btn btn-outline-primary btn-sm" id="adminRefreshBtn" onclick="refreshAdminData()" title="새로고침"><i class="fa-solid fa-rotate"></i></button>
+            <button class="btn btn-outline-secondary btn-sm" onclick="openAdminPasswordModal()" title="비번 변경"><i class="fa-solid fa-key"></i></button>
+            <button class="btn btn-outline-danger btn-sm" onclick="confirmLogout()" title="로그아웃"><i class="fa-solid fa-right-from-bracket"></i></button>
+          </div>
+        </div>
+
+        <ul class="nav nav-pills nav-fill flex-nowrap mb-3 admin-nav-pill" id="adminTab">
+          <li class="nav-item">
+            <button class="nav-link active btn-sm" id="adminTabUsers" onclick="switchAdminTab('users')"><i class="fa-solid fa-users me-1"></i>회원 현황</button>
+          </li>
+          <li class="nav-item">
+            <button class="nav-link btn-sm position-relative" id="adminTabPendingPins" onclick="switchAdminTab('pendingPins')">
+              <i class="fa-solid fa-award me-1 text-warning"></i>핀 현황
+              <span id="pendingPinBadgeCount" class="badge rounded-pill bg-danger ms-1" style="display:none;">0</span>
+            </button>
+          </li>
+          <li class="nav-item">
+            <button class="nav-link btn-sm" id="adminTabWeekly" onclick="switchAdminTab('weekly')"><i class="fa-solid fa-calendar-week me-1"></i>주간 현황</button>
+          </li>
+        </ul>
+
+        <!-- 관리자 탭 1: 사용자 목록 -->
+        <div id="adminViewUsers">
+          <div class="mb-3">
+            <div class="admin-filter-group" id="userFilterButtons">
+              <button type="button" class="admin-filter-btn active" onclick="setAdminUserFilter('ALL')">전체</button>
+              <button type="button" class="admin-filter-btn btn-filter-스팍스" onclick="setAdminUserFilter('스팍스')">스팍스</button>
+              <button type="button" class="admin-filter-btn btn-filter-티앤티" onclick="setAdminUserFilter('티앤티')">티앤티</button>
+              <button type="button" class="admin-filter-btn btn-filter-선생님" onclick="setAdminUserFilter('선생님')">선생님</button>
+            </div>
+          </div>
+
+          <div id="adminUserCardsContainer"></div>
+        </div>
+
+        <!-- 관리자 탭 2: 지급 전 핀 현황 -->
+        <div id="adminViewPendingPins" style="display:none;">
+          <div class="alert alert-warning py-2 px-3 small mb-3">
+            <div class="mb-2"><i class="fa-solid fa-circle-info me-1"></i>성경을 완독하여 <strong>핀을 받을 대상자</strong> 목록입니다.</div>
+            <div class="mb-2" style="word-break:keep-all;">
+              • <strong>앞으로 받을 핀</strong>은 체크하지 말고 <strong>어쩜조아에서 시상</strong>하세요. 시상하면 여기도 자동으로 지급완료됩니다.<br>
+              • <strong>이미 예전에 받은 핀</strong>만 여기서 체크하고 업데이트를 누르세요. 어쩜조아 시상 대기에서 빠집니다. (어쩜조아 시상 기록에는 남지 않습니다)
+            </div>
+            <div id="ozzmStatusLine" class="mb-2" style="display:none; font-size:0.78rem;"></div>
+            <div class="d-flex gap-1">
+              <button type="button" class="btn btn-sm btn-outline-dark" id="pendingSelectAllBtn" onclick="toggleSelectAllPendingPins()"><i class="fa-solid fa-check-double me-1"></i>전체 선택</button>
+            </div>
+          </div>
+
+          <div id="pendingPinsContainer"></div>
+
+          <div class="text-center pt-2 border-top">
+            <button type="button" id="savePendingPinsBtn" class="btn btn-warning w-100 fw-bold py-2" onclick="saveAndBatchUpdatePins()">
+              <i class="fa-solid fa-check me-1"></i>핀 지급 상태 업데이트
+            </button>
+          </div>
+        </div>
+
+        <!-- 관리자 탭 3: 주간 현황 -->
+        <div id="adminViewWeekly" style="display:none;">
+          <div class="mb-2">
+            <div class="admin-filter-group" id="weeklyFilterButtons">
+              <button type="button" class="admin-filter-btn active" onclick="setWeeklyFilter('ALL')">전체</button>
+              <button type="button" class="admin-filter-btn btn-filter-스팍스" onclick="setWeeklyFilter('스팍스')">스팍스</button>
+              <button type="button" class="admin-filter-btn btn-filter-티앤티" onclick="setWeeklyFilter('티앤티')">티앤티</button>
+              <button type="button" class="admin-filter-btn btn-filter-선생님" onclick="setWeeklyFilter('선생님')">선생님</button>
+            </div>
+          </div>
+
+          <div class="row g-2 mb-3 align-items-center">
+            <div class="col-8">
+              <select id="weeklyWeekSelector" class="form-select form-select-sm fw-bold border-primary" onchange="renderWeeklyStats()"></select>
+            </div>
+            <div class="col-4 text-end">
+              <button class="btn btn-sm btn-outline-primary w-100" onclick="renderWeeklyStats()"><i class="fa-solid fa-arrows-rotate me-1"></i>조회</button>
+            </div>
+          </div>
+
+          <div class="card p-2 bg-light mb-3">
+            <div class="fw-bold small text-primary mb-1"><i class="fa-solid fa-chart-simple me-1"></i>해당 주간 소속별 총 읽은 장수</div>
+            <div class="d-flex justify-content-around text-center" id="weeklyGroupSummary"></div>
+          </div>
+
+          <div class="table-responsive">
+            <table class="table table-bordered table-hover align-middle text-center" style="font-size: 0.8rem;">
+              <thead class="table-light">
+                <tr>
+                  <th>소속</th>
+                  <th>이름</th>
+                  <th>해당 주간 읽은 장수</th>
+                  <th>최근 읽은 날짜</th>
+                </tr>
+              </thead>
+              <tbody id="weeklyStatsTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+
+  <!-- 통계 모달 -->
+  <div class="modal fade" id="statsModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header py-2">
+          <h5 class="modal-header-title fw-bold fs-6 mb-0" id="statsModalTitle"><i class="fa-solid fa-chart-pie me-2 text-primary"></i>성경 통독 통계</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body p-3">
+          
+          <div class="row g-1 mb-2 text-center">
+            <div class="col-3">
+              <div class="period-stat-card">
+                <div class="period-stat-val" id="statYearCount">0</div>
+                <div class="period-stat-lbl">올해</div>
+              </div>
+            </div>
+            <div class="col-3">
+              <div class="period-stat-card">
+                <div class="period-stat-val" id="statMonthCount">0</div>
+                <div class="period-stat-lbl">이번달</div>
+              </div>
+            </div>
+            <div class="col-3">
+              <div class="period-stat-card">
+                <div class="period-stat-val" id="statWeekCount">0</div>
+                <div class="period-stat-lbl">이번주</div>
+              </div>
+            </div>
+            <div class="col-3">
+              <div class="period-stat-card">
+                <div class="period-stat-val" id="statTodayCount">0</div>
+                <div class="period-stat-lbl">오늘</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <div class="d-flex justify-content-between align-items-center border-bottom pb-1 mb-2">
+              <h6 class="fw-bold mb-0 style-sm" style="font-size:0.82rem;"><i class="fa-regular fa-calendar-check me-1 text-success"></i>월별 (최근 12개월)</h6>
+              <span class="text-muted" style="font-size:0.68rem;">월 클릭 시 달력 표시</span>
+            </div>
+
+            <div id="monthlyGridContainer" class="month-grid-4 mb-2"></div>
+
+            <div id="dailyDetailSection" class="card bg-light border p-2" style="display:none;">
+              <div class="d-flex justify-content-between align-items-center border-bottom pb-1 mb-1">
+                <span class="fw-bold text-primary small" id="selectedMonthTitle" style="font-size:0.75rem;">달력</span>
+                <span class="badge bg-primary px-2 py-1" id="dailyAvgBadge" style="font-size:0.65rem;">일평균 0장</span>
+              </div>
+              
+              <div id="calendarGridWrapper" class="calendar-grid">
+                <div class="calendar-header-cell sun">일</div>
+                <div class="calendar-header-cell">월</div>
+                <div class="calendar-header-cell">화</div>
+                <div class="calendar-header-cell">수</div>
+                <div class="calendar-header-cell">목</div>
+                <div class="calendar-header-cell">금</div>
+                <div class="calendar-header-cell sat">토</div>
+              </div>
+              <div id="calendarDaysList" class="calendar-grid mt-1"></div>
+            </div>
+          </div>
+
+          <div>
+            <h6 class="fw-bold border-bottom pb-1 mb-2" style="font-size:0.82rem;"><i class="fa-solid fa-book-open me-1 text-info"></i>구약 / 신약 통독 상세</h6>
+            <div id="testamentCategoryStatsList"></div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 관리자 비밀번호 변경 모달 -->
+  <div class="modal fade" id="adminPwModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h6 class="modal-title fw-bold"><i class="fa-solid fa-key me-1 text-danger"></i>관리자 비밀번호 변경</h6>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body p-3">
+          <form onsubmit="handleAdminPwChange(event)">
+            <div class="mb-2">
+              <label class="form-label small fw-bold">현재 비밀번호</label>
+              <input type="password" id="curAdminPw" class="form-control form-control-sm" required>
+            </div>
+            <div class="mb-3">
+              <label class="form-label small fw-bold">새 비밀번호 (숫자 4자리 ~ 8자리)</label>
+              <input type="password" id="newAdminPw" inputmode="numeric" pattern="[0-9]*" maxlength="8" class="form-control form-control-sm" required>
+            </div>
+            <button type="submit" class="btn btn-primary btn-sm w-100 fw-bold">변경하기</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 축하 팝업 모달 -->
+  <div class="modal fade" id="congratsModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+      <div class="modal-content text-center p-3">
+        <div class="modal-body">
+          <div style="font-size: 3rem; color: #FFB703;" class="mb-2">🎉</div>
+          <h5 class="fw-bold text-success mb-2">축하합니다!</h5>
+          <p id="congratsMessage" class="fw-semibold text-secondary small mb-3">
+            와 축하합니다! <strong class="text-dark" id="congratsCategoryName">모세오경</strong>을(를) 다 읽었습니다.<br>선생님께 핀을 달라고 요청하세요!
+          </p>
+          <button type="button" class="btn btn-warning w-100 fw-bold" data-bs-dismiss="modal">확인</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 관리자: 지난 기록 입력 창 -->
+  <div class="modal fade" id="pastRecordModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-scrollable modal-fullscreen-sm-down">
+      <div class="modal-content">
+        <div class="modal-header py-2">
+          <h6 class="modal-title fw-bold" id="pastRecordTitle"><i class="fa-solid fa-book-bookmark me-1 text-success"></i>지난 기록 입력</h6>
+          <button type="button" class="btn-close" onclick="closePastRecordEditor()" aria-label="Close"></button>
+        </div>
+        <div class="modal-body p-3">
+          <div class="alert alert-success py-2 px-3 small mb-2" style="word-break:keep-all;">
+            앱을 쓰기 전에 읽은 장을 표시합니다. 날짜 대신 <strong>'이전'</strong>으로 기록되어 통계(이번 주·이번 달)와 주간 현황에는 포함되지 않습니다.
+            <div class="mt-1">이미 핀을 받은 범위는 저장 후 <strong>핀 현황</strong>에서 지급완료로 체크하세요. 체크하지 않은 범위는 어쩜조아 시상 대기에 나타납니다.</div>
+          </div>
+          <ul class="nav nav-tabs nav-fill mb-2">
+            <li class="nav-item"><button type="button" class="nav-link tab-ot fw-bold" id="pastTabOT" onclick="switchPastTestament('OT')">구약</button></li>
+            <li class="nav-item"><button type="button" class="nav-link tab-nt fw-bold" id="pastTabNT" onclick="switchPastTestament('NT')">신약</button></li>
+          </ul>
+          <div id="pastBooksGrid" class="book-grid-mobile mb-3"></div>
+          <div id="pastChapterSection" class="p-2 border rounded bg-light" style="display:none;">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <div>
+                <h6 class="fw-bold d-inline me-1 mb-0" id="pastBookTitle"></h6>
+                <span class="badge bg-secondary small" id="pastBookProgress"></span>
+              </div>
+              <button type="button" class="btn btn-outline-primary py-1 px-2" id="pastSelectAllBtn" style="font-size:0.75rem;" onclick="togglePastBookAll()">전체 선택</button>
+            </div>
+            <div id="pastChapterGrid" class="chapter-grid-7"></div>
+          </div>
+        </div>
+        <div class="modal-footer py-2">
+          <button type="button" class="btn btn-light fw-bold" onclick="closePastRecordEditor()">닫기</button>
+          <button type="button" class="btn btn-success fw-bold" id="pastSaveBtn" onclick="savePastRecords()" disabled>저장</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 앱 내부 확인/입력 창 (브라우저 기본 confirm/prompt 대신 사용) -->
+  <div class="modal fade" id="appDialogModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+      <div class="modal-content" style="border-radius:16px;">
+        <div class="modal-body p-3">
+          <div id="appDialogMessage" class="fw-semibold mb-3"></div>
+          <input type="text" id="appDialogInput" inputmode="numeric" pattern="[0-9]*" maxlength="8" autocomplete="off"
+                 class="form-control form-control-styled fw-bold mb-3" style="display:none;">
+          <div class="d-flex gap-2">
+            <button type="button" id="appDialogCancel" class="btn btn-light flex-fill fw-bold">취소</button>
+            <button type="button" id="appDialogOk" class="btn btn-primary flex-fill fw-bold">확인</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 플로팅 안내 메시지가 표시되는 자리 -->
+  <div id="appToastContainer" class="app-toast-container" aria-live="polite"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    // ------------------------------------------------------------
+    // 어통조아 서버(Apps Script 웹앱) 주소. 화면은 Vercel, 서버(Code.gs)와 데이터는 구글 시트에 있다.
+    // Apps Script를 '새 배포'로 만들어 주소(/exec)가 바뀌면 여기만 고친다. (같은 배포를 '새 버전'으로 고치면 주소는 그대로)
+    // ------------------------------------------------------------
+    const OTNG_API_URL = 'https://script.google.com/macros/s/AKfycbweP8n-GmEcBiq90t6rY9l1ETIPgCFujAWj_yofjoymW_Cd2ACD76N25zGrnL5ioTkf/exec';
+
+    // google.script.run 대신 쓰는 서버 호출 도구.
+    // 기존 코드(google.script.run.withSuccessHandler(..).withFailureHandler(..).함수(..))를 그대로 쓸 수 있도록 같은 모양으로 만든다.
+    // Content-Type을 text/plain으로 보내야 브라우저가 사전 확인(CORS preflight) 없이 Apps Script로 바로 보낸다.
+    (function () {
+      function callServer(fn, args, onOk, onFail) {
+        fetch(OTNG_API_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify({ fn: fn, args: args }),
+          redirect: 'follow'
+        })
+          .then(function (r) {
+            if (!r.ok) throw new Error('서버 응답 오류 (' + r.status + ')');
+            return r.json();
+          })
+          .then(function (res) {
+            if (!res || !res.ok) throw new Error((res && res.error) || '서버 오류');
+            // 성공 처리 중 생긴 오류가 실패 처리로 넘어가지 않도록 분리해서 호출한다.
+            if (onOk) setTimeout(function () { onOk(res.result); }, 0);
+          })
+          .catch(function (err) {
+            if (onFail) onFail(err); else console.error('서버 호출 실패 (' + fn + '):', err);
+          });
+      }
+      function makeRunner(onOk, onFail) {
+        return new Proxy({}, {
+          get: function (_, prop) {
+            if (typeof prop !== 'string') return undefined;
+            if (prop === 'withSuccessHandler') return function (f) { return makeRunner(f, onFail); };
+            if (prop === 'withFailureHandler') return function (f) { return makeRunner(onOk, f); };
+            return function () { callServer(prop, Array.prototype.slice.call(arguments), onOk, onFail); };
+          }
+        });
+      }
+      window.google = window.google || {};
+      window.google.script = window.google.script || {};
+      Object.defineProperty(window.google.script, 'run', { get: function () { return makeRunner(null, null); } });
+    })();
+  </script>
+  <script>
+    const BIBLE_STRUCTURE = [
+      { name: "창세기", chapters: 50, category: "모세오경", testament: "OT" },
+      { name: "출애굽기", chapters: 40, category: "모세오경", testament: "OT" },
+      { name: "레위기", chapters: 27, category: "모세오경", testament: "OT" },
+      { name: "민수기", chapters: 36, category: "모세오경", testament: "OT" },
+      { name: "신명기", chapters: 34, category: "모세오경", testament: "OT" },
+      { name: "여호수아", chapters: 24, category: "역사서", testament: "OT" },
+      { name: "사사기", chapters: 21, category: "역사서", testament: "OT" },
+      { name: "룻기", chapters: 4, category: "역사서", testament: "OT" },
+      { name: "사무엘상", chapters: 31, category: "역사서", testament: "OT" },
+      { name: "사무엘하", chapters: 24, category: "역사서", testament: "OT" },
+      { name: "열왕기상", chapters: 22, category: "역사서", testament: "OT" },
+      { name: "열왕기하", chapters: 25, category: "역사서", testament: "OT" },
+      { name: "역대상", chapters: 29, category: "역사서", testament: "OT" },
+      { name: "역대하", chapters: 36, category: "역사서", testament: "OT" },
+      { name: "에스라", chapters: 10, category: "역사서", testament: "OT" },
+      { name: "느헤미야", chapters: 13, category: "역사서", testament: "OT" },
+      { name: "에스더", chapters: 10, category: "역사서", testament: "OT" },
+      { name: "욥기", chapters: 42, category: "시가서", testament: "OT" },
+      { name: "시편", chapters: 150, category: "시가서", testament: "OT" },
+      { name: "잠언", chapters: 31, category: "시가서", testament: "OT" },
+      { name: "전도서", chapters: 12, category: "시가서", testament: "OT" },
+      { name: "아가", chapters: 8, category: "시가서", testament: "OT" },
+      { name: "이사야", chapters: 66, category: "예언서", testament: "OT" },
+      { name: "예레미야", chapters: 52, category: "예언서", testament: "OT" },
+      { name: "예레미야애가", chapters: 5, category: "예언서", testament: "OT" },
+      { name: "에스겔", chapters: 48, category: "예언서", testament: "OT" },
+      { name: "다니엘", chapters: 12, category: "예언서", testament: "OT" },
+      { name: "호세아", chapters: 14, category: "예언서", testament: "OT" },
+      { name: "요엘", chapters: 3, category: "예언서", testament: "OT" },
+      { name: "아모스", chapters: 9, category: "예언서", testament: "OT" },
+      { name: "오바댜", chapters: 1, category: "예언서", testament: "OT" },
+      { name: "요나", chapters: 4, category: "예언서", testament: "OT" },
+      { name: "미가", chapters: 7, category: "예언서", testament: "OT" },
+      { name: "나훔", chapters: 3, category: "예언서", testament: "OT" },
+      { name: "하박국", chapters: 3, category: "예언서", testament: "OT" },
+      { name: "스바냐", chapters: 3, category: "예언서", testament: "OT" },
+      { name: "학개", chapters: 2, category: "예언서", testament: "OT" },
+      { name: "스가랴", chapters: 14, category: "예언서", testament: "OT" },
+      { name: "말라기", chapters: 4, category: "예언서", testament: "OT" },
+
+      { name: "마태복음", chapters: 28, category: "복음서", testament: "NT" },
+      { name: "마가복음", chapters: 16, category: "복음서", testament: "NT" },
+      { name: "누가복음", chapters: 24, category: "복음서", testament: "NT" },
+      { name: "요한복음", chapters: 21, category: "복음서", testament: "NT" },
+      { name: "사도행전", chapters: 28, category: "사도행전", testament: "NT" },
+      { name: "로마서", chapters: 16, category: "서신서", testament: "NT" },
+      { name: "고린도전서", chapters: 16, category: "서신서", testament: "NT" },
+      { name: "고린도후서", chapters: 13, category: "서신서", testament: "NT" },
+      { name: "갈라디아서", chapters: 6, category: "서신서", testament: "NT" },
+      { name: "에베소서", chapters: 6, category: "서신서", testament: "NT" },
+      { name: "빌립보서", chapters: 4, category: "서신서", testament: "NT" },
+      { name: "골로새서", chapters: 4, category: "서신서", testament: "NT" },
+      { name: "데살로니가전서", chapters: 5, category: "서신서", testament: "NT" },
+      { name: "데살로니가후서", chapters: 3, category: "서신서", testament: "NT" },
+      { name: "디모데전서", chapters: 6, category: "서신서", testament: "NT" },
+      { name: "디모데후서", chapters: 4, category: "서신서", testament: "NT" },
+      { name: "디도서", chapters: 3, category: "서신서", testament: "NT" },
+      { name: "빌레몬서", chapters: 1, category: "서신서", testament: "NT" },
+      { name: "히브리서", chapters: 13, category: "서신서", testament: "NT" },
+      { name: "야고보서", chapters: 5, category: "서신서", testament: "NT" },
+      { name: "베드로전서", chapters: 5, category: "서신서", testament: "NT" },
+      { name: "베드로후서", chapters: 3, category: "서신서", testament: "NT" },
+      { name: "요한1서", chapters: 5, category: "서신서", testament: "NT" },
+      { name: "요한2서", chapters: 1, category: "서신서", testament: "NT" },
+      { name: "요한3서", chapters: 1, category: "서신서", testament: "NT" },
+      { name: "유다서", chapters: 1, category: "서신서", testament: "NT" },
+      { name: "요한계시록", chapters: 22, category: "계시록", testament: "NT" }
+    ];
+
+    const ALL_PIN_CATEGORIES = [
+      "모세오경", "역사서", "시가서", "예언서",
+      "복음서", "사도행전", "서신서", "계시록",
+      "구약", "신약", "신구약"
+    ];
+
+    // 선생님은 구약/신약/신구약 핀만 지급 대상, 학생(스팍스/티앤티)은 전체 핀 지급 대상
+    function getApplicablePinCategories(group) {
+      return group === '선생님' ? ['구약', '신약', '신구약'] : ALL_PIN_CATEGORIES;
+    }
+
+    // 사용자가 입력한 값(이름 등)을 innerHTML에 넣을 때는 반드시 이 함수를 거친다.
+    // (이름에 <, >, ', " 등이 들어 있어도 화면이 깨지거나 스크립트가 실행되지 않도록)
+    function escapeHtml(value) {
+      return String(value === undefined || value === null ? '' : value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    // ------------------------------------------------------------
+    // 플로팅 안내 메시지 (브라우저 기본 alert 대신 사용)
+    //   type: 'success' | 'info' | 'warning' | 'error'
+    //   duration(ms): 생략하면 종류별 기본값, 0이면 직접 닫을 때까지 유지
+    // ------------------------------------------------------------
+    const TOAST_ICONS = {
+      success: 'fa-circle-check',
+      info: 'fa-circle-info',
+      warning: 'fa-triangle-exclamation',
+      error: 'fa-circle-exclamation'
+    };
+    const TOAST_DEFAULT_MS = { success: 3000, info: 3500, warning: 5000, error: 7000 };
+
+    function toast(message, type = 'info', duration) {
+      const container = document.getElementById('appToastContainer');
+      const text = String(message === undefined || message === null ? '' : message);
+      if (!container) { console.log(text); return; }
+
+      // 같은 메시지가 이미 떠 있으면 새로 쌓지 않고 그 메시지를 다시 띄운다. (연타 방지)
+      Array.from(container.children).forEach(el => {
+        if (el.dataset.text === text) el.remove();
+      });
+
+      const el = document.createElement('div');
+      el.className = `app-toast app-toast-${type}`;
+      el.dataset.text = text;
+      el.setAttribute('role', type === 'error' ? 'alert' : 'status');
+      el.innerHTML = `<i class="fa-solid ${TOAST_ICONS[type] || TOAST_ICONS.info}"></i>`
+        + '<span class="app-toast-msg"></span>'
+        + '<button type="button" class="app-toast-close" aria-label="닫기">&times;</button>';
+      el.querySelector('.app-toast-msg').textContent = text;
+
+      let removed = false;
+      const remove = () => {
+        if (removed) return;
+        removed = true;
+        el.classList.remove('show');
+        setTimeout(() => el.remove(), 250);
+      };
+      el.querySelector('.app-toast-close').onclick = remove;
+
+      container.appendChild(el);
+      while (container.children.length > 3) container.firstElementChild.remove();
+      requestAnimationFrame(() => el.classList.add('show'));
+
+      const ms = duration !== undefined ? duration : (TOAST_DEFAULT_MS[type] || 3500);
+      if (ms > 0) setTimeout(remove, ms);
+    }
+
+    // ------------------------------------------------------------
+    // 앱 내부 확인/입력 창 (브라우저 기본 confirm/prompt 대신 사용)
+    //   appConfirm(메시지, {okText, cancelText, danger}) → Promise<true|false>
+    //   appPrompt(메시지, {okText, placeholder})          → Promise<입력값|null>
+    // ------------------------------------------------------------
+    let appDialogObj = null;
+    let appDialogResolve = null;
+    let appDialogHasInput = false;
+
+    function openAppDialog(message, opts) {
+      const o = opts || {};
+      return new Promise(resolve => {
+        // 이전 창이 아직 열려 있으면 취소로 정리한다.
+        if (appDialogResolve) { const prev = appDialogResolve; appDialogResolve = null; prev(appDialogHasInput ? null : false); }
+        appDialogResolve = resolve;
+        appDialogHasInput = !!o.input;
+
+        document.getElementById('appDialogMessage').textContent = String(message || '');
+        const okBtn = document.getElementById('appDialogOk');
+        okBtn.textContent = o.okText || '확인';
+        okBtn.className = `btn ${o.danger ? 'btn-danger' : 'btn-primary'} flex-fill fw-bold`;
+        document.getElementById('appDialogCancel').textContent = o.cancelText || '취소';
+
+        const input = document.getElementById('appDialogInput');
+        input.style.display = o.input ? 'block' : 'none';
+        input.value = '';
+        input.placeholder = o.placeholder || '';
+
+        appDialogObj.show();
+        if (o.input) setTimeout(() => input.focus(), 350);
+      });
+    }
+
+    function finishAppDialog(confirmed) {
+      const resolve = appDialogResolve;
+      appDialogResolve = null;
+      if (appDialogObj) appDialogObj.hide();
+      if (!resolve) return;
+      if (appDialogHasInput) resolve(confirmed ? document.getElementById('appDialogInput').value : null);
+      else resolve(!!confirmed);
+    }
+
+    function appConfirm(message, opts) { return openAppDialog(message, Object.assign({}, opts, { input: false })); }
+    function appPrompt(message, opts) { return openAppDialog(message, Object.assign({}, opts, { input: true })); }
+
+    function initAppDialog() {
+      const modalEl = document.getElementById('appDialogModal');
+      appDialogObj = new bootstrap.Modal(modalEl);
+      document.getElementById('appDialogOk').onclick = () => finishAppDialog(true);
+      document.getElementById('appDialogCancel').onclick = () => finishAppDialog(false);
+      document.getElementById('appDialogInput').addEventListener('keydown', e => {
+        if (e.key === 'Enter') { e.preventDefault(); finishAppDialog(true); }
+      });
+      // ESC 등으로 닫힌 경우 '취소'로 처리
+      modalEl.addEventListener('hidden.bs.modal', () => { if (appDialogResolve) finishAppDialog(false); });
+    }
+
+    function chunkArray(arr, size) {
+      const result = [];
+      for (let i = 0; i < arr.length; i += size) result.push(arr.slice(i, i + size));
+      return result;
+    }
+
+    const GROUP_ORDER = { '스팍스': 1, '티앤티': 2, '선생님': 3 };
+
+    let currentMode = 'login';
+    let currentUser = null;
+    let userReadMap = {};
+    let lastSyncedReadMap = {};
+    let userGrantedPins = [];
+    let currentTestament = 'OT';
+    let currentCategoryFilter = 'ALL';
+    let currentSelectedBook = null;
+    let adminUsersData = [];
+    let currentAdminTab = 'users';
+    let statsModalObj = null;
+    let adminPwModalObj = null;
+    let congratsModalObj = null;
+    let saveTimer = null;
+    let isSavingNow = false;
+    let pendingSaveNeeded = false;
+
+    let adminUserFilterValue = 'ALL';
+    let adminWeeklyFilterValue = 'ALL';
+    let adminSessionToken = null;
+    let saveRetryCount = 0;
+    let saveHardFailure = false;
+    // 재시도해도 소용없는 실패(다시 로그인 필요, 기록 손상 등). 자동 재시도 대상에서 제외한다.
+    let savePermanentFailure = false;
+    const MAX_SAVE_RETRIES = 5;
+
+    document.addEventListener('DOMContentLoaded', () => {
+      statsModalObj = new bootstrap.Modal(document.getElementById('statsModal'));
+      adminPwModalObj = new bootstrap.Modal(document.getElementById('adminPwModal'));
+      congratsModalObj = new bootstrap.Modal(document.getElementById('congratsModal'));
+      initAppDialog();
+      updateGroupSelectColor(document.getElementById('userGroup'));
+      init15WeeksSelector();
+    });
+
+    // 창을 닫거나 새로고침 하는 경우, 저장 대기 중인 변경사항이 있으면 즉시 저장을 시도한다.
+    // (이미 저장이 진행 중이라면 중복 호출하지 않고 그대로 둔다 - 동시 쓰기로 인한 오류 방지)
+    window.addEventListener('beforeunload', () => {
+      if (currentUser && saveTimer && !isSavingNow) {
+        clearTimeout(saveTimer);
+        saveTimer = null;
+        runSave();
+      }
+    });
+
+    // 저장이 계속 실패해 멈춘 상태에서, 인터넷이 다시 연결되거나 앱 화면으로 돌아오면
+    // 자동으로 다시 저장을 시도한다. (기록은 그동안 이 기기에 임시 보관되어 있다)
+    function retryPendingSaveIfNeeded() {
+      if (!currentUser || isSavingNow || saveTimer || savePermanentFailure) return;
+      if (!pendingSaveNeeded && !saveHardFailure) return;
+      saveRetryCount = 0;
+      runSave();
+    }
+    window.addEventListener('online', retryPendingSaveIfNeeded);
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') retryPendingSaveIfNeeded();
+    });
+
+    function updateGroupSelectColor(sel) {
+      sel.className = `form-select form-select-styled group-${sel.value} fw-bold`;
+    }
+
+    /* 2. 로그인/등록/관리자 탭 변경 */
+    function switchAuthMode(mode) {
+      currentMode = mode;
+      document.querySelectorAll('#authTab .nav-link').forEach(el => el.classList.remove('active'));
+      
+      const groupSel = document.getElementById('groupSelectGroup');
+      const nameGrp = document.getElementById('nameGroup');
+      const btn = document.getElementById('authSubmitBtn');
+      const pwLabel = document.getElementById('pwLabel');
+
+      if (mode === 'login') {
+        document.getElementById('tabLogin').classList.add('active');
+        // 로그인은 이름+비밀번호만 받는다. 소속은 신규 등록 때만 선택.
+        groupSel.style.display = 'none';
+        nameGrp.style.display = 'block';
+        pwLabel.innerHTML = '<i class="fa-solid fa-key text-danger me-1"></i>비밀번호 (숫자 4자리 ~ 8자리)';
+        btn.innerText = '로그인';
+      } else if (mode === 'register') {
+        document.getElementById('tabRegister').classList.add('active');
+        groupSel.style.display = 'block';
+        nameGrp.style.display = 'block';
+        pwLabel.innerHTML = '<i class="fa-solid fa-key text-danger me-1"></i>비밀번호 (숫자 4자리 ~ 8자리)';
+        btn.innerText = '신규 등록';
+      } else if (mode === 'admin') {
+        document.getElementById('tabAdmin').classList.add('active');
+        groupSel.style.display = 'none';
+        nameGrp.style.display = 'none';
+        pwLabel.innerHTML = '<i class="fa-solid fa-key text-danger me-1"></i>관리자 비밀번호';
+        btn.innerText = '관리자 로그인';
+      }
+    }
+
+    /* 1. 비밀번호 '0', '0000', '0923' 처리 보장 */
+    function handleAuth(e) {
+      e.preventDefault();
+      const group = document.getElementById('userGroup').value;
+      const name = document.getElementById('userName').value.trim();
+      
+      // String() 처리를 통해 '0'도 원본 문자열 그대로 보존
+      const pwInput = document.getElementById('userPw').value;
+      const pw = pwInput !== null && pwInput !== undefined ? String(pwInput).trim() : '';
+
+      if (currentMode !== 'admin' && !name) {
+        toast('이름을 입력해주세요.', 'warning');
+        return;
+      }
+
+      if (pw === '') {
+        toast('비밀번호를 입력해주세요.', 'warning');
+        return;
+      }
+
+      const submitBtn = document.getElementById('authSubmitBtn');
+      const originalBtnText = submitBtn ? submitBtn.innerText : '';
+      const setSubmitLoading = (loading) => {
+        if (!submitBtn) return;
+        submitBtn.disabled = loading;
+        submitBtn.innerText = loading ? '처리 중...' : originalBtnText;
+      };
+      const handleAuthFailure = (err) => {
+        console.error('요청 처리 중 오류:', err);
+        setSubmitLoading(false);
+        toast('네트워크 오류로 요청을 처리하지 못했습니다. 인터넷 연결을 확인 후 다시 시도해주세요.', 'error');
+      };
+
+      if (currentMode === 'register') {
+        // 이름은 완성형 한글 1~5자만 허용 (서버에서도 같은 규칙으로 다시 검사)
+        if (!/^[가-힣]{1,5}$/.test(name)) {
+          toast('이름은 한글 5자 이내로 입력해주세요.\n(띄어쓰기, 영문, 숫자, 특수기호는 사용할 수 없어요)', 'warning');
+          return;
+        }
+        // '0'을 포함한 숫자로만 구성된 4~8자리 비밀번호만 허용
+        if (!/^\d{4,8}$/.test(pw)) {
+          toast('비밀번호는 숫자 4자리 이상 8자리 이하로 입력해주세요.', 'warning');
+          return;
+        }
+        setSubmitLoading(true);
+        google.script.run
+          .withSuccessHandler(res => {
+            setSubmitLoading(false);
+            if (res.success) {
+              toast('성공적으로 등록되었습니다!', 'success');
+              initUserSession(res.user, res.readChaptersMap, []);
+            } else {
+              toast(res.message, 'warning');
+            }
+          })
+          .withFailureHandler(handleAuthFailure)
+          .registerUser(group, name, pw);
+      } else if (currentMode === 'login') {
+        setSubmitLoading(true);
+        google.script.run
+          .withSuccessHandler(res => {
+            setSubmitLoading(false);
+            if (res.success) {
+              initUserSession(res.user, res.readChaptersMap, res.grantedPins || []);
+            } else {
+              toast(res.message, 'warning');
+            }
+          })
+          .withFailureHandler(handleAuthFailure)
+          .loginUser(name, pw);
+      } else if (currentMode === 'admin') {
+        setSubmitLoading(true);
+        google.script.run
+          .withSuccessHandler(res => {
+            setSubmitLoading(false);
+            if (res.success) {
+              document.getElementById('authSection').style.display = 'none';
+              document.getElementById('adminMainSection').style.display = 'block';
+              adminSessionToken = res.adminSessionToken || null;
+              if (!adminSessionToken) { toast('관리자 인증 토큰을 받지 못했습니다. 다시 로그인해주세요.', 'error'); return; }
+              adminUsersData = sortUsersByGroup(res.users || []); renderOzzmStatus(res.ozzmStatus);
+              renderAdminCards();
+              updatePendingPinsBadge();
+            } else {
+              toast(res.message, 'warning');
+            }
+          })
+          .withFailureHandler(handleAuthFailure)
+          .adminLogin(pw);
+      }
+    }
+
+    function sortUsersByGroup(users) {
+      return [...users].sort((a, b) => {
+        const orderA = GROUP_ORDER[a.group] || 99;
+        const orderB = GROUP_ORDER[b.group] || 99;
+        if (orderA !== orderB) return orderA - orderB;
+        return a.name.localeCompare(b.name, 'ko');
+      });
+    }
+
+    function initUserSession(user, readChaptersMap, grantedPins) {
+      currentUser = user;
+      userReadMap = readChaptersMap || {};
+      lastSyncedReadMap = JSON.parse(JSON.stringify(userReadMap));
+      userGrantedPins = grantedPins || [];
+      saveHardFailure = false;
+      savePermanentFailure = false;
+      saveRetryCount = 0;
+      const recovered = recoverLocalBackup(user.id);
+      if (recovered) {
+        toast('저장되지 않았던 최근 통독 기록을 복구했습니다. 서버에 다시 저장합니다.', 'info');
+        scheduleSave();
+      }
+
+      document.getElementById('authSection').style.display = 'none';
+      document.getElementById('userMainSection').style.display = 'block';
+      
+      const dispGroup = document.getElementById('dispGroup');
+      dispGroup.innerText = user.group;
+      dispGroup.className = `badge badge-group-${user.group}`;
+      document.getElementById('dispName').innerText = user.name;
+
+      switchTestament('OT');
+      updateProgressAndPins();
+      // 핀 지급 상태는 로그인(화면 새로고침 후 재로그인) 시에만 서버에서 받아온다.
+    }
+
+    // '어통조아' 로고 클릭 시, 로그인 직후 보이는 첫 화면 상태로 복귀
+    function goToHomeScreen() {
+      if (!currentUser) {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        return;
+      }
+
+      // 펼쳐둔 통계/핀 현황 영역을 초기(접힘) 상태로 되돌린다.
+      const statsWrapper = document.getElementById('readingStatsWrapper');
+      const statsChevron = document.getElementById('readingStatsChevron');
+      if (statsWrapper) statsWrapper.style.display = 'none';
+      if (statsChevron) { statsChevron.classList.remove('fa-chevron-up'); statsChevron.classList.add('fa-chevron-down'); }
+
+      const pinWrapper = document.getElementById('pinDashboardWrapper');
+      const pinChevron = document.getElementById('pinDashboardChevron');
+      if (pinWrapper) pinWrapper.style.display = 'none';
+      if (pinChevron) { pinChevron.classList.remove('fa-chevron-up'); pinChevron.classList.add('fa-chevron-down'); }
+
+      closeChapterDetail();
+      switchTestament('OT');
+    }
+
+    async function confirmLogout() {
+      if (await appConfirm('로그아웃 하시겠습니까?', { okText: '로그아웃' })) {
+        logout(() => {
+          toast('당신의 삶을 축복합니다. ✨', 'success');
+        });
+      }
+    }
+
+    function logout(onComplete) {
+      // 로그아웃 버튼들을 즉시 비활성화하고 로딩 표시를 해서, 저장 처리 중임을 바로 알려준다.
+      document.querySelectorAll('[onclick="confirmLogout()"]').forEach(btn => {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+      });
+
+      const doLogout = () => {
+        currentUser = null;
+        adminSessionToken = null;
+        userReadMap = {};
+        userGrantedPins = [];
+        document.getElementById('userMainSection').style.display = 'none';
+        document.getElementById('adminMainSection').style.display = 'none';
+        document.getElementById('authSection').style.display = 'block';
+        document.getElementById('userPw').value = '';
+
+        // 다음 로그인을 대비해 버튼 상태를 원래대로 복구
+        document.querySelectorAll('[onclick="confirmLogout()"]').forEach(btn => {
+          btn.disabled = false;
+          btn.innerHTML = '<i class="fa-solid fa-right-from-bracket"></i>';
+        });
+
+        if (onComplete) onComplete();
+      };
+
+      let flushed = false;
+      const safeDoLogout = () => {
+        if (flushed) return;
+        if (saveHardFailure || pendingSaveNeeded || saveTimer || isSavingNow) {
+          flushed = true;
+          document.querySelectorAll('[onclick="confirmLogout()"]').forEach(btn => {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fa-solid fa-right-from-bracket"></i>';
+          });
+          toast('아직 서버에 저장되지 않은 통독 기록이 있습니다. 기록을 보존하기 위해 로그아웃하지 않았습니다. 인터넷 연결을 확인한 후 다시 시도해주세요.', 'warning', 8000);
+          return;
+        }
+        flushed = true;
+        doLogout();
+      };
+
+      // 저장되지 않은 변경사항이 있다면 로그아웃 전에 먼저 서버에 반영해
+      // 관리자 화면에서 최신 데이터가 바로 보이도록 한다.
+      // (참고: 저장할 변경사항이 없다면 flushPendingSave가 즉시 콜백을 실행하므로
+      //  대부분의 경우 로그아웃은 지연 없이 바로 이루어진다.)
+      flushPendingSave(safeDoLogout);
+
+      // 저장이 끝나기 전에는 강제로 로그아웃하지 않는다.
+      // 기존의 시간 제한 로그아웃은 currentUser를 먼저 비워 저장 재시도를 중단시킬 수 있어
+      // 통독 기록 유실 가능성이 있으므로 제거한다.
+    }
+
+    function findMostRecentInScope(scopeBooks) {
+      let best = null; // { bookName, chapter, fullDate }
+      scopeBooks.forEach(b => {
+        for (let ch = 1; ch <= b.chapters; ch++) {
+          const item = userReadMap[`${b.name}_${ch}`];
+          if (item === undefined) continue;
+          const fullDate = getFullDateStr(item) || '0000-00-00';
+          if (!best || fullDate >= best.fullDate) {
+            best = { bookName: b.name, chapter: ch, fullDate };
+          }
+        }
+      });
+      return best;
+    }
+
+    function focusBookChapter(bookName, chapter) {
+      selectBook(bookName);
+      setTimeout(() => {
+        const grid = document.getElementById('chapterGrid');
+        const box = grid ? grid.children[chapter - 1] : null;
+        if (box) {
+          box.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          box.classList.add('recent-highlight');
+          setTimeout(() => box.classList.remove('recent-highlight'), 2000);
+        }
+      }, 150);
+    }
+
+    function focusRecentChapterForScope(scopeBooks) {
+      if (!scopeBooks || scopeBooks.length === 0) return;
+      const best = findMostRecentInScope(scopeBooks);
+      if (best) {
+        focusBookChapter(best.bookName, best.chapter);
+      } else {
+        focusBookChapter(scopeBooks[0].name, 1);
+      }
+    }
+
+    function switchTestament(testament) {
+      currentTestament = testament;
+      currentCategoryFilter = 'ALL';
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      document.getElementById('btnTabOT').classList.toggle('active', testament === 'OT');
+      document.getElementById('btnTabNT').classList.toggle('active', testament === 'NT');
+      
+      renderCategoryFilters();
+      closeChapterDetail();
+      renderBooksGrid();
+
+      const scopeBooks = BIBLE_STRUCTURE.filter(b => b.testament === testament);
+      focusRecentChapterForScope(scopeBooks);
+    }
+
+    function renderCategoryFilters() {
+      const filterBox = document.getElementById('subCategoryFilters');
+      filterBox.innerHTML = '';
+
+      const categories = (currentTestament === 'OT')
+        ? ['전체', '모세오경', '역사서', '시가서', '예언서']
+        : ['전체', '복음서', '사도행전', '서신서', '계시록'];
+
+      categories.forEach(cat => {
+        const btn = document.createElement('button');
+        const isAll = (cat === '전체');
+        const isActive = (isAll && currentCategoryFilter === 'ALL') || (currentCategoryFilter === cat);
+        btn.className = `category-filter-btn cat-${cat} ${isActive ? 'active' : ''}`;
+        btn.innerText = cat;
+        btn.onclick = () => {
+          currentCategoryFilter = isAll ? 'ALL' : cat;
+          renderCategoryFilters();
+          renderBooksGrid();
+          if (!isAll) {
+            const scopeBooks = BIBLE_STRUCTURE.filter(b => b.testament === currentTestament && b.category === cat);
+            focusRecentChapterForScope(scopeBooks);
+          }
+        };
+        filterBox.appendChild(btn);
+      });
+    }
+
+    function renderBooksGrid() {
+      const grid = document.getElementById('booksGrid');
+      grid.innerHTML = '';
+
+      let books = BIBLE_STRUCTURE.filter(b => b.testament === currentTestament);
+      if (currentCategoryFilter !== 'ALL') {
+        books = books.filter(b => b.category === currentCategoryFilter);
+      }
+
+      books.forEach(b => {
+        let readCount = 0;
+        for (let ch = 1; ch <= b.chapters; ch++) {
+          if (userReadMap[`${b.name}_${ch}`] !== undefined) readCount++;
+        }
+        const isCompleted = (readCount === b.chapters);
+
+        const btn = document.createElement('div');
+        btn.className = `book-card-mobile book-card-${b.category} ${isCompleted ? 'completed-book' : ''} ${currentSelectedBook === b.name ? 'active-book' : ''}`;
+        btn.onclick = () => focusRecentChapterForScope([b]);
+        btn.innerHTML = `
+          <div class="book-card-name">${b.name}</div>
+          <div style="font-size:0.6rem; opacity:0.85;">${readCount}/${b.chapters}</div>
+        `;
+
+        grid.appendChild(btn);
+      });
+    }
+
+    function selectBook(bookName) {
+      currentSelectedBook = bookName;
+      renderBooksGrid();
+
+      const book = BIBLE_STRUCTURE.find(b => b.name === bookName);
+      document.getElementById('selectedBookTitle').innerText = book.name;
+      
+      const detailSection = document.getElementById('chapterDetailSection');
+      detailSection.style.display = 'block';
+
+      renderChapters();
+
+      setTimeout(() => {
+        detailSection.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }, 100);
+    }
+
+    function closeChapterDetail() {
+      currentSelectedBook = null;
+      document.getElementById('chapterDetailSection').style.display = 'none';
+      renderBooksGrid();
+    }
+
+    // 관리자가 핀을 지급한 카테고리(구약/신약/신구약/세부 카테고리)에 속한 성경은
+    // 지급이 취소되기 전까지 장 클릭(수정)을 막는다.
+    function isBookLocked(book) {
+      if (!book || !userGrantedPins || userGrantedPins.length === 0) return false;
+      if (userGrantedPins.includes(book.category)) return true;
+      if (book.testament === 'OT' && userGrantedPins.includes('구약')) return true;
+      if (book.testament === 'NT' && userGrantedPins.includes('신약')) return true;
+      if (userGrantedPins.includes('신구약')) return true;
+      return false;
+    }
+
+    // 읽은 기록의 값은 항상 "YYYY-MM-DD" 문자열 하나다. (예: {"창세기_1": "2026-11-04"})
+    function getFullDateStr(item) {
+      return (typeof item === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(item)) ? item : null;
+    }
+
+    // 관리자가 '지난 기록'으로 입력한 장의 날짜 값. 화면에는 '이전'으로 보이고,
+    // 아주 옛날 날짜라 올해/이번 달/이번 주 통계와 주간 현황에는 잡히지 않는다. (Code.gs의 PAST_READ_DATE_와 같아야 함)
+    const PAST_READ_DATE = '2000-01-01';
+
+    // "2026-11-04" → "11/4",  지난 기록 → "이전"
+    function getShortDateStr(item) {
+      const full = getFullDateStr(item);
+      if (!full) return '';
+      if (full === PAST_READ_DATE) return '이전';
+      const parts = full.split('-');
+      return `${parseInt(parts[1], 10)}/${parseInt(parts[2], 10)}`;
+    }
+
+    function getTodayDateParts() {
+      // 모든 사용자의 통독 날짜를 한국 시간(Asia/Seoul) 기준으로 통일한다.
+      const parts = new Intl.DateTimeFormat('en-CA', {
+        timeZone: 'Asia/Seoul', year: 'numeric', month: '2-digit', day: '2-digit'
+      }).formatToParts(new Date());
+      const y = parts.find(p => p.type === 'year').value;
+      const m = parts.find(p => p.type === 'month').value;
+      const d = parts.find(p => p.type === 'day').value;
+      return { short: `${parseInt(m,10)}/${parseInt(d,10)}`, full: `${y}-${m}-${d}` };
+    }
+
+    function getSeoulNow() {
+      const { full } = getTodayDateParts();
+      return new Date(full + 'T12:00:00');
+    }
+
+    function renderChapters() {
+      if (!currentSelectedBook) return;
+
+      const book = BIBLE_STRUCTURE.find(b => b.name === currentSelectedBook);
+      const grid = document.getElementById('chapterGrid');
+      grid.innerHTML = '';
+
+      const locked = isBookLocked(book);
+      let readCount = 0;
+
+      for (let ch = 1; ch <= book.chapters; ch++) {
+        const key = `${book.name}_${ch}`;
+        const item = userReadMap[key];
+        const isRead = (item !== undefined);
+        if (isRead) readCount++;
+
+        const dateStr = getShortDateStr(item);
+
+        const box = document.createElement('div');
+        box.className = `chapter-btn-box chapter-theme-${book.category} ${isRead ? 'read' : ''} ${locked ? 'chapter-locked' : ''}`;
+        if (locked) {
+          box.onclick = () => toast('이미 핀을 받은 항목이에요! 수정하려면 선생님(관리자)이 먼저 핀 지급을 취소해야 해요.', 'info');
+        } else {
+          box.onclick = () => toggleChapter(key, book);
+        }
+        box.innerHTML = `
+          <div class="chapter-num">${ch}</div>
+          <div class="chapter-date">${isRead ? dateStr : ''}</div>
+          ${locked ? '<i class="fa-solid fa-lock chapter-lock-icon"></i>' : ''}
+        `;
+        grid.appendChild(box);
+      }
+
+      document.getElementById('bookProgressText').innerText = `${readCount} / ${book.chapters}장`;
+      
+      const selectAllBtn = document.getElementById('selectAllBtn');
+      if (locked) {
+        selectAllBtn.disabled = true;
+        selectAllBtn.innerText = '핀 지급됨 (수정불가)';
+        selectAllBtn.className = 'btn btn-xs btn-secondary me-1 py-1 px-2';
+      } else {
+        selectAllBtn.disabled = false;
+        if (readCount === book.chapters) {
+          selectAllBtn.innerText = '전체 해제';
+          selectAllBtn.className = 'btn btn-xs btn-outline-danger me-1 py-1 px-2';
+        } else {
+          selectAllBtn.innerText = '전체 선택';
+          selectAllBtn.className = 'btn btn-xs btn-outline-primary me-1 py-1 px-2';
+        }
+      }
+    }
+
+    // 성경 읽기 상태 저장: 빠르게 여러 장을 연속으로 누를 때 요청이 뒤섞이거나
+    // 유실되지 않도록 디바운스 + 단일 진행(single-flight) 큐로 처리한다.
+    // (주의) 이미 저장 요청이 서버로 전송된 상태(isSavingNow)에서 또 다른 저장 요청을
+    // 동시에 보내면, 같은 사용자 행(row)에 두 개의 쓰기 작업이 겹치면서
+    // "데이터 저장 중 오류가 발생했습니다" 같은 시트 동시 접근 오류가 발생할 수 있다.
+    // 그래서 아래 로직은 항상 "한 번에 하나의 저장 요청만" 서버로 보내도록 보장한다.
+    let flushCallbacks = [];
+
+    function localBackupKey(userId) { return 'eotj_backup_' + String(userId); }
+
+    function saveLocalBackup() {
+      if (!currentUser) return;
+      try {
+        localStorage.setItem(localBackupKey(currentUser.id), JSON.stringify({
+          baseMap: lastSyncedReadMap,
+          localMap: userReadMap,
+          savedAt: Date.now()
+        }));
+      } catch (e) {
+        console.warn('로컬 백업 저장 실패:', e);
+      }
+    }
+
+    function clearLocalBackup(userId) {
+      try { localStorage.removeItem(localBackupKey(userId)); } catch (e) {}
+    }
+
+    function recoverLocalBackup(userId) {
+      try {
+        const raw = localStorage.getItem(localBackupKey(userId));
+        if (!raw) return false;
+        const backup = JSON.parse(raw);
+        if (!backup || !backup.localMap || !backup.baseMap) return false;
+        const recovered = JSON.parse(JSON.stringify(userReadMap || {}));
+        const base = backup.baseMap || {};
+        const local = backup.localMap || {};
+        Object.keys(local).forEach(k => {
+          if (!Object.prototype.hasOwnProperty.call(base, k) || JSON.stringify(base[k]) !== JSON.stringify(local[k])) recovered[k] = local[k];
+        });
+        Object.keys(base).forEach(k => {
+          if (!Object.prototype.hasOwnProperty.call(local, k)) delete recovered[k];
+        });
+        if (JSON.stringify(recovered) !== JSON.stringify(userReadMap)) {
+          userReadMap = recovered;
+          return true;
+        }
+      } catch (e) {
+        console.warn('로컬 백업 복구 실패:', e);
+      }
+      return false;
+    }
+
+    function scheduleSave() {
+      saveLocalBackup();
+      pendingSaveNeeded = true;
+      if (saveTimer) clearTimeout(saveTimer);
+      saveTimer = setTimeout(runSave, 300);
+    }
+
+    function runSave() {
+      saveTimer = null;
+      if (!currentUser) { resolveFlushCallbacks(); return; }
+      if (isSavingNow) {
+        // 이미 진행 중인 저장이 있다면 새 요청을 보내지 않고, 그 저장이 끝난 뒤
+        // 이어서 처리되도록 표시만 해둔다 (동시 요청으로 인한 시트 충돌 방지).
+        pendingSaveNeeded = true;
+        return;
+      }
+      isSavingNow = true;
+      pendingSaveNeeded = false;
+      saveHardFailure = false;
+      const userId = currentUser.id;
+      const snapshot = JSON.parse(JSON.stringify(userReadMap));
+      const baseSnapshot = JSON.parse(JSON.stringify(lastSyncedReadMap));
+
+      google.script.run
+        .withSuccessHandler((res) => {
+          isSavingNow = false;
+          if (res && res.success === false) {
+            if (res.permanent) {
+              // 재시도해도 해결되지 않는 오류(예: 다시 로그인 필요)는 반복 재시도하지 않고
+              // 바로 사용자에게 알린다.
+              pendingSaveNeeded = true;
+              saveHardFailure = true;
+              savePermanentFailure = true;
+              saveLocalBackup();
+              toast(res.message || '저장 중 문제가 발생했습니다. 통독 기록은 이 기기에 임시 보관됩니다.', 'error', 0);
+              resolveFlushCallbacks();
+              return;
+            }
+            // 서버가 명시적으로 실패를 반환한 경우(예: 동시 접속 폭주로 인한 잠금 타임아웃)도
+            // 예외를 던진 경우와 동일하게 재시도한다.
+            console.error('저장 실패, 재시도합니다:', res.message);
+            pendingSaveNeeded = true;
+            saveLocalBackup();
+            saveRetryCount++;
+            if (saveRetryCount <= MAX_SAVE_RETRIES) {
+              setTimeout(runSave, Math.min(3000, 800 * saveRetryCount));
+            } else {
+              saveRetryCount = 0;
+              saveHardFailure = true;
+              toast('서버 저장에 계속 실패했습니다. 통독 기록은 이 기기에 임시 보관되어 있고, 인터넷이 다시 연결되면 자동으로 저장합니다.', 'error', 10000);
+              resolveFlushCallbacks();
+            }
+            return;
+          }
+
+          if (res && res.mergedReadChaptersMap) {
+            saveRetryCount = 0;
+            // 이번에 보낸 상태(snapshot) 기준으로 서버가 병합한 결과를 새 동기화 기준선으로 삼는다.
+            lastSyncedReadMap = JSON.parse(JSON.stringify(res.mergedReadChaptersMap));
+
+            // 저장이 진행되는 동안 추가로 변경된 내용이 없다면, 다른 기기에서 생긴 변경사항까지
+            // 반영해 화면도 최신 상태로 갱신한다. (진행 중 새 변경이 있다면 그 변경을 덮어쓰지
+            // 않도록 여기서는 건드리지 않고, 다음 저장 때 자연스럽게 반영되도록 한다.)
+            if (!pendingSaveNeeded) {
+              userReadMap = JSON.parse(JSON.stringify(res.mergedReadChaptersMap));
+              try {
+                renderChapters();
+                renderBooksGrid();
+                updateProgressAndPins();
+              } catch (e) {
+                console.error('저장 후 화면 갱신 중 오류:', e);
+              }
+            }
+          }
+
+          if (pendingSaveNeeded) {
+            saveLocalBackup();
+            runSave();
+          } else {
+            clearLocalBackup(userId);
+            resolveFlushCallbacks();
+          }
+        })
+        .withFailureHandler((err) => {
+          console.error('저장 실패:', err);
+          isSavingNow = false;
+          pendingSaveNeeded = true;
+          saveLocalBackup();
+          saveRetryCount++;
+          if (saveRetryCount <= MAX_SAVE_RETRIES) {
+            setTimeout(runSave, Math.min(3000, 800 * saveRetryCount));
+          } else {
+            saveRetryCount = 0;
+            saveHardFailure = true;
+            toast('서버 저장에 계속 실패했습니다. 통독 기록은 이 기기에 임시 보관되어 있고, 인터넷이 다시 연결되면 자동으로 저장합니다.', 'error', 10000);
+            resolveFlushCallbacks();
+          }
+        })
+        .saveReadingProgress(userId, snapshot, baseSnapshot, currentUser.token || '');
+    }
+
+    function resolveFlushCallbacks() {
+      const cbs = flushCallbacks;
+      flushCallbacks = [];
+      cbs.forEach(cb => cb());
+    }
+
+    // 로그아웃/화면 전환 직전 등, 저장을 즉시 확정 지어야 할 때 사용.
+    // 이미 진행 중인 저장이 있다면 "새로 겹쳐서 보내지 않고" 그 저장이 완전히
+    // 끝날 때까지 기다린 뒤 callback을 실행한다.
+    function flushPendingSave(callback) {
+      if (!currentUser || (!saveTimer && !isSavingNow && !pendingSaveNeeded)) {
+        callback();
+        return;
+      }
+      flushCallbacks.push(callback);
+      if (saveTimer) {
+        clearTimeout(saveTimer);
+        saveTimer = null;
+      }
+      if (!isSavingNow) {
+        runSave();
+      }
+      // isSavingNow가 true인 경우, 이미 진행 중인 저장의 완료 핸들러가
+      // pendingSaveNeeded 여부를 확인해 필요하면 이어서 저장하고,
+      // 최종적으로 resolveFlushCallbacks()를 호출해 callback이 실행된다.
+    }
+
+    async function toggleChapter(key, book) {
+      if (isBookLocked(book)) {
+        toast('이미 핀을 받은 항목이에요! 수정하려면 선생님(관리자)이 먼저 핀 지급을 취소해야 해요.', 'info');
+        return;
+      }
+
+      const prevStats = calculateStats(userReadMap);
+      const existing = userReadMap[key];
+      const { full: todayFull } = getTodayDateParts();
+
+      if (existing !== undefined) {
+        const existingFullDate = getFullDateStr(existing);
+
+        if (existingFullDate && existingFullDate !== todayFull) {
+          // 오늘이 아닌 다른 날짜에 읽은 기록을 다시 클릭한 경우: 날짜를 오늘로 바꿀지 확인
+          if (!(await appConfirm(`이미 ${getShortDateStr(existingFullDate)}에 읽은 장이에요.\n읽은 날짜를 오늘로 변경할까요?`, { okText: '오늘로 변경' }))) {
+            return; // 취소 시 아무 것도 변경하지 않음
+          }
+          userReadMap[key] = todayFull;
+        } else {
+          // 오늘 체크한 장을 다시 누르면 해제
+          delete userReadMap[key];
+        }
+      } else {
+        userReadMap[key] = todayFull;
+      }
+
+      const nextStats = calculateStats(userReadMap);
+
+      // 데이터 저장을 최우선으로 실행한다. 아래 화면 갱신(모달, 렌더링) 단계에서
+      // 예외가 발생하더라도 이미 저장 요청은 걸린 상태이므로 데이터 유실을 막는다.
+      scheduleSave();
+
+      try {
+        checkNewlyEarnedPin(prevStats.eligiblePins, nextStats.eligiblePins);
+        renderChapters();
+        renderBooksGrid();
+        updateProgressAndPins();
+      } catch (err) {
+        console.error('화면 갱신 중 오류가 발생했습니다 (저장에는 영향 없음):', err);
+      }
+    }
+
+    async function toggleSelectAllCurrentBook() {
+      if (!currentSelectedBook) return;
+
+      const book = BIBLE_STRUCTURE.find(b => b.name === currentSelectedBook);
+
+      if (isBookLocked(book)) {
+        toast('이미 핀을 받은 항목이에요! 수정하려면 선생님(관리자)이 먼저 핀 지급을 취소해야 해요.', 'info');
+        return;
+      }
+
+      const prevStats = calculateStats(userReadMap);
+      let readCount = 0;
+      for (let ch = 1; ch <= book.chapters; ch++) {
+        if (userReadMap[`${book.name}_${ch}`] !== undefined) readCount++;
+      }
+
+      const shouldSelectAll = (readCount < book.chapters);
+
+      // 이미 다 읽은 성경을 실수로 통째로 해제해버리는 사고를 방지하기 위한 확인창
+      if (!shouldSelectAll) {
+        if (!(await appConfirm(`'${book.name}' 전체 ${book.chapters}장을 읽지 않은 상태로 되돌릴까요?`, { okText: '전체 해제', danger: true }))) {
+          return;
+        }
+      }
+
+      const { full: todayFull } = getTodayDateParts();
+
+      for (let ch = 1; ch <= book.chapters; ch++) {
+        const key = `${book.name}_${ch}`;
+        if (shouldSelectAll) {
+          if (userReadMap[key] === undefined) {
+            userReadMap[key] = todayFull;
+          }
+        } else {
+          delete userReadMap[key];
+        }
+      }
+
+      const nextStats = calculateStats(userReadMap);
+
+      // 데이터 저장을 최우선으로 실행 (화면 갱신 오류가 저장을 막지 않도록)
+      scheduleSave();
+
+      try {
+        checkNewlyEarnedPin(prevStats.eligiblePins, nextStats.eligiblePins);
+        renderChapters();
+        renderBooksGrid();
+        updateProgressAndPins();
+      } catch (err) {
+        console.error('화면 갱신 중 오류가 발생했습니다 (저장에는 영향 없음):', err);
+      }
+    }
+
+    function checkNewlyEarnedPin(prevEligible, nextEligible) {
+      const applicablePins = getApplicablePinCategories(currentUser ? currentUser.group : null);
+      const newlyEarned = nextEligible.filter(pin => applicablePins.includes(pin) && !prevEligible.includes(pin));
+      if (newlyEarned.length > 0) {
+        const pinName = newlyEarned[0];
+        const nameEl = document.getElementById('congratsCategoryName');
+        if (nameEl) nameEl.innerText = pinName;
+        if (congratsModalObj) congratsModalObj.show();
+      }
+    }
+
+    function calculateStats(readMap) {
+      let otTotal = 0, otRead = 0;
+      let ntTotal = 0, ntRead = 0;
+
+      const categoryMap = {};
+
+      BIBLE_STRUCTURE.forEach(b => {
+        if (!categoryMap[b.category]) categoryMap[b.category] = { total: 0, read: 0 };
+        categoryMap[b.category].total += b.chapters;
+
+        if (b.testament === 'OT') otTotal += b.chapters;
+        else ntTotal += b.chapters;
+
+        for (let ch = 1; ch <= b.chapters; ch++) {
+          const key = `${b.name}_${ch}`;
+          if (readMap[key] !== undefined) {
+            categoryMap[b.category].read++;
+            if (b.testament === 'OT') otRead++;
+            else ntRead++;
+          }
+        }
+      });
+
+      const totalChapters = otTotal + ntTotal; 
+      const totalRead = otRead + ntRead;
+
+      const eligiblePins = [];
+      Object.keys(categoryMap).forEach(cat => {
+        if (categoryMap[cat].read === categoryMap[cat].total) {
+          eligiblePins.push(cat);
+        }
+      });
+
+      if (otRead === otTotal) eligiblePins.push('구약');
+      if (ntRead === ntTotal) eligiblePins.push('신약');
+      if (totalRead === totalChapters) eligiblePins.push('신구약');
+
+      return {
+        otRead, otTotal, otPercent: Math.round((otRead / otTotal) * 100),
+        ntRead, ntTotal, ntPercent: Math.round((ntRead / ntTotal) * 100),
+        totalRead, totalChapters, totalPercent: Math.round((totalRead / totalChapters) * 100),
+        eligiblePins
+      };
+    }
+
+    function toggleReadingStats() {
+      const wrapper = document.getElementById('readingStatsWrapper');
+      const chevron = document.getElementById('readingStatsChevron');
+      const isOpen = wrapper.style.display !== 'none';
+      wrapper.style.display = isOpen ? 'none' : 'block';
+      chevron.classList.toggle('fa-chevron-down', isOpen);
+      chevron.classList.toggle('fa-chevron-up', !isOpen);
+    }
+
+    function togglePinDashboard() {
+      const wrapper = document.getElementById('pinDashboardWrapper');
+      const chevron = document.getElementById('pinDashboardChevron');
+      const isOpen = wrapper.style.display !== 'none';
+      wrapper.style.display = isOpen ? 'none' : 'block';
+      chevron.classList.toggle('fa-chevron-down', isOpen);
+      chevron.classList.toggle('fa-chevron-up', !isOpen);
+    }
+
+    function updateProgressAndPins() {
+      const stats = calculateStats(userReadMap);
+
+      document.getElementById('otPercent').innerText = `${stats.otPercent}%`;
+      document.getElementById('otRatio').innerText = `${stats.otRead} / ${stats.otTotal}장`;
+
+      document.getElementById('ntPercent').innerText = `${stats.ntPercent}%`;
+      document.getElementById('ntRatio').innerText = `${stats.ntRead} / ${stats.ntTotal}장`;
+
+      document.getElementById('totalPercent').innerText = `${stats.totalPercent}%`;
+      document.getElementById('totalRatio').innerText = `${stats.totalRead} / ${stats.totalChapters}장`;
+
+      document.getElementById('totalProgressBar').style.width = `${stats.totalPercent}%`;
+
+      const dashboard = document.getElementById('pinDashboard');
+      dashboard.innerHTML = '';
+
+      const applicablePins = getApplicablePinCategories(currentUser ? currentUser.group : null);
+      const rowsData = chunkArray(applicablePins, 4);
+
+      rowsData.forEach(rowPins => {
+        const rowDiv = document.createElement('div');
+        rowDiv.className = 'row g-1';
+
+        rowPins.forEach(pin => {
+          const isEligible = stats.eligiblePins.includes(pin);
+          const isGranted = userGrantedPins.includes(pin);
+
+          let bgClass = 'pin-bg-unearned'; 
+          if (isGranted) {
+            bgClass = 'pin-bg-granted';  
+          } else if (isEligible) {
+            bgClass = 'pin-bg-eligible'; 
+          }
+
+          const col = document.createElement('div');
+          col.className = 'col-3';
+          col.innerHTML = `
+            <div class="pin-compact-card ${bgClass}">
+              ${pin}
+            </div>
+          `;
+          rowDiv.appendChild(col);
+        });
+
+        dashboard.appendChild(rowDiv);
+      });
+
+      // 구약/신약/신구약을 완독했지만 아직 핀을 받지 못한 경우 선생님께 요청하라는 안내 배너 표시
+      const bannerContainer = document.getElementById('pinRequestBanner');
+      if (bannerContainer) {
+        bannerContainer.innerHTML = '';
+        ['구약', '신약', '신구약'].forEach(pin => {
+          if (stats.eligiblePins.includes(pin) && !userGrantedPins.includes(pin)) {
+            const alertDiv = document.createElement('div');
+            alertDiv.className = 'pin-request-alert';
+            alertDiv.innerHTML = `<i class="fa-solid fa-gift"></i><span>${pin}을(를) 다 읽었어요! 선생님께 <strong>${pin}핀</strong>을 요청해보세요 🎉</span>`;
+            bannerContainer.appendChild(alertDiv);
+          }
+        });
+      }
+    }
+
+    function toggleUserStatsModal(targetUser = null) {
+      const readMap = targetUser ? targetUser.readChaptersMap : userReadMap;
+      const userName = targetUser ? targetUser.name : (currentUser ? currentUser.name : '');
+      const userGroup = targetUser ? targetUser.group : (currentUser ? currentUser.group : '');
+
+      const safeGroup = escapeHtml(userGroup);
+      document.getElementById('statsModalTitle').innerHTML = `${userGroup ? `<span class="badge badge-group-${safeGroup} me-1">${safeGroup}</span>` : ''}<span class="stats-name-highlight">${escapeHtml(userName)}</span> 성경 통독 통계`;
+
+      const now = getSeoulNow();
+      const currentYear = now.getFullYear();
+      const currentMonth = now.getMonth() + 1;
+      const todayYMD = `${currentYear}-${(currentMonth < 10 ? '0' : '') + currentMonth}-${(now.getDate() < 10 ? '0' : '') + now.getDate()}`;
+
+      const currentDay = now.getDay();
+      const diffToMonday = (currentDay === 0 ? -6 : 1) - currentDay;
+      const thisMonday = new Date(now);
+      thisMonday.setDate(now.getDate() + diffToMonday);
+      thisMonday.setHours(0, 0, 0, 0);
+
+      let yearCount = 0;
+      let monthCount = 0;
+      let weekCount = 0;
+      let todayCount = 0;
+
+      const dailyMap = {};
+
+      Object.values(readMap).forEach(item => {
+        const fullDate = getFullDateStr(item);
+
+        if (fullDate) {
+          dailyMap[fullDate] = (dailyMap[fullDate] || 0) + 1;
+
+          const itemDate = new Date(fullDate + 'T00:00:00');
+          if (itemDate.getFullYear() === currentYear) {
+            yearCount++;
+            if ((itemDate.getMonth() + 1) === currentMonth) {
+              monthCount++;
+            }
+          }
+          if (itemDate >= thisMonday) {
+            weekCount++;
+          }
+          if (fullDate === todayYMD) {
+            todayCount++;
+          }
+        }
+      });
+
+      document.getElementById('statYearCount').innerText = `${yearCount}장`;
+      document.getElementById('statMonthCount').innerText = `${monthCount}장`;
+      document.getElementById('statWeekCount').innerText = `${weekCount}장`;
+      document.getElementById('statTodayCount').innerText = `${todayCount}장`;
+
+      const monthListKeys = [];
+      for (let i = 11; i >= 0; i--) {
+        const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+        const y = d.getFullYear();
+        const m = d.getMonth() + 1;
+        const key = `${y}-${(m < 10 ? '0' : '') + m}`;
+        monthListKeys.push({ key: key, label: `${m}월`, fullLabel: `${y}년 ${m}월`, year: y, month: m });
+      }
+
+      const monthlyGrid = document.getElementById('monthlyGridContainer');
+      monthlyGrid.innerHTML = '';
+
+      monthListKeys.forEach(mObj => {
+        let totalMonthCh = 0;
+        Object.keys(dailyMap).forEach(dKey => {
+          if (dKey.startsWith(mObj.key)) {
+            totalMonthCh += dailyMap[dKey];
+          }
+        });
+
+        const isCurrentMonth = (mObj.year === currentYear && mObj.month === currentMonth);
+
+        const card = document.createElement('div');
+        card.className = `month-stat-card ${isCurrentMonth ? 'active' : ''}`;
+        card.id = `mcard_${mObj.year}_${mObj.month}`;
+        card.innerHTML = `
+          <div class="fw-bold" style="font-size:0.75rem;">${mObj.label}</div>
+          <div class="month-badge badge ${isCurrentMonth ? 'bg-light text-dark' : 'bg-primary'} rounded-pill mt-1" style="font-size:0.6rem; padding: 2px 4px;">${totalMonthCh}장</div>
+        `;
+        card.onclick = () => {
+          document.querySelectorAll('.month-stat-card').forEach(el => {
+            el.classList.remove('active');
+            const b = el.querySelector('.month-badge');
+            if (b) { b.className = 'month-badge badge bg-primary rounded-pill mt-1'; }
+          });
+          card.classList.add('active');
+          const myBadge = card.querySelector('.month-badge');
+          if (myBadge) { myBadge.className = 'month-badge badge bg-light text-dark rounded-pill mt-1'; }
+
+          showDailyDetail(mObj.year, mObj.month, mObj.fullLabel, dailyMap, true);
+        };
+        monthlyGrid.appendChild(card);
+      });
+
+      const curObj = monthListKeys.find(m => m.year === currentYear && m.month === currentMonth) || monthListKeys[monthListKeys.length - 1];
+      showDailyDetail(curObj.year, curObj.month, curObj.fullLabel, dailyMap, false);
+
+      const testCatContainer = document.getElementById('testamentCategoryStatsList');
+      testCatContainer.innerHTML = '';
+
+      const testaments = [
+        { code: "OT", name: "구약 (39권)", categories: ["모세오경", "역사서", "시가서", "예언서"], colorClass: "text-ot" },
+        { code: "NT", name: "신약 (27권)", categories: ["복음서", "사도행전", "서신서", "계시록"], colorClass: "text-nt" }
+      ];
+
+      testaments.forEach(t => {
+        const tSection = document.createElement('div');
+        tSection.className = 'mb-2';
+        tSection.innerHTML = `<div class="fw-bold style-sm ${t.colorClass} mb-1 border-bottom pb-1" style="font-size:0.8rem;">${t.name}</div>`;
+
+        t.categories.forEach((catName, idx) => {
+          const catBooks = BIBLE_STRUCTURE.filter(b => b.testament === t.code && b.category === catName);
+          let catTotal = 0, catRead = 0;
+
+          catBooks.forEach(b => {
+            catTotal += b.chapters;
+            for (let ch = 1; ch <= b.chapters; ch++) {
+              if (readMap[`${b.name}_${ch}`] !== undefined) catRead++;
+            }
+          });
+
+          const catPercent = Math.round((catRead / catTotal) * 100);
+          const catId = `cat_collapse_${t.code}_${idx}`;
+
+          let booksHtml = '<div class="book-grid-mobile">';
+          catBooks.forEach(b => {
+            let bRead = 0;
+            for (let ch = 1; ch <= b.chapters; ch++) {
+              if (readMap[`${b.name}_${ch}`] !== undefined) bRead++;
+            }
+            const isCompleted = (bRead === b.chapters);
+
+            booksHtml += `
+              <div class="book-card-mobile book-card-${b.category} ${isCompleted ? 'completed-book' : ''}" style="cursor:default;">
+                <div class="book-card-name">${b.name}</div>
+                <div style="font-size:0.6rem; opacity:0.85;">${bRead}/${b.chapters}</div>
+              </div>
+            `;
+          });
+          booksHtml += '</div>';
+
+          const catBox = document.createElement('div');
+          catBox.innerHTML = `
+            <div class="category-header p-2 bg-light rounded d-flex justify-content-between align-items-center mb-1" style="cursor:pointer;" data-bs-toggle="collapse" data-bs-target="#${catId}">
+              <span class="small fw-bold"><i class="fa-solid fa-chevron-right me-1 small"></i>${catName} (${catBooks.length}권)</span>
+              <span class="small fw-bold text-dark">${catRead} / ${catTotal}장 (${catPercent}%)</span>
+            </div>
+            <div class="collapse p-2 border rounded bg-white mb-2" id="${catId}">
+              ${booksHtml}
+            </div>
+          `;
+
+          tSection.appendChild(catBox);
+        });
+
+        testCatContainer.appendChild(tSection);
+      });
+
+      statsModalObj.show();
+    }
+
+    function showDailyDetail(year, month, fullLabel, dailyMap, shouldScroll = false) {
+      const detailSec = document.getElementById('dailyDetailSection');
+      detailSec.style.display = 'block';
+
+      document.getElementById('selectedMonthTitle').innerText = `${fullLabel} 달력`;
+
+      const firstDayIndex = new Date(year, month - 1, 1).getDay();
+      const lastDate = new Date(year, month, 0).getDate();
+      const monthPrefix = `${year}-${(month < 10 ? '0' : '') + month}`;
+
+      let totalMonthCh = 0;
+      let activeDaysCount = 0;
+
+      const daysContainer = document.getElementById('calendarDaysList');
+      daysContainer.innerHTML = '';
+
+      for (let i = 0; i < firstDayIndex; i++) {
+        const emptyCell = document.createElement('div');
+        emptyCell.className = 'calendar-day-cell empty';
+        daysContainer.appendChild(emptyCell);
+      }
+
+      for (let day = 1; day <= lastDate; day++) {
+        const dKey = `${monthPrefix}-${(day < 10 ? '0' : '') + day}`;
+        const count = dailyMap[dKey] || 0;
+        if (count > 0) {
+          totalMonthCh += count;
+          activeDaysCount++;
+        }
+
+        const dayCell = document.createElement('div');
+        dayCell.className = `calendar-day-cell ${count > 0 ? 'has-read' : ''}`;
+        dayCell.innerHTML = `
+          <div class="cal-day-num ${((firstDayIndex + day - 1) % 7 === 0) ? 'text-danger' : ((firstDayIndex + day - 1) % 7 === 6) ? 'text-primary' : ''}">${day}</div>
+          ${count > 0 ? `<div class="cal-read-badge">${count}장</div>` : ''}
+        `;
+        daysContainer.appendChild(dayCell);
+      }
+
+      const avgFullMonth = (totalMonthCh / lastDate).toFixed(1);
+      const avgActiveDays = activeDaysCount > 0 ? (totalMonthCh / activeDaysCount).toFixed(1) : 0;
+      document.getElementById('dailyAvgBadge').innerText = `총 ${totalMonthCh}장 | 일평균: ${avgFullMonth}장 (읽은날: ${avgActiveDays}장)`;
+
+      if (shouldScroll) {
+        setTimeout(() => {
+          detailSec.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }, 80);
+      }
+    }
+
+    function refreshAdminData() {
+      const btn = document.getElementById('adminRefreshBtn');
+      if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-rotate fa-spin"></i>'; }
+
+      google.script.run
+        .withSuccessHandler(res => {
+          if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-rotate"></i>'; }
+          if (res && res.success) {
+            adminUsersData = sortUsersByGroup(res.users || []); renderOzzmStatus(res.ozzmStatus);
+            updatePendingPinsBadge();
+            if (currentAdminTab === 'users') renderAdminCards();
+            else if (currentAdminTab === 'pendingPins') renderPendingPinsTab();
+            else if (currentAdminTab === 'weekly') renderWeeklyStats();
+          }
+        })
+        .withFailureHandler(err => {
+          if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-rotate"></i>'; }
+          handleAdminServerError(err, '네트워크 오류로 새로고침하지 못했습니다. 다시 시도해주세요.');
+        })
+        .loadAdminData(adminSessionToken, true);   // true: 어쩜조아 시상 기록을 먼저 반영
+    }
+
+    // 어쩜조아 연동 상태 표시 (핀 현황 탭 안내 상자 안)
+    function renderOzzmStatus(status) {
+      const el = document.getElementById('ozzmStatusLine');
+      if (!el) return;
+      if (!status || !status.enabled) { el.style.display = 'none'; return; }
+      let html = '<i class="fa-solid fa-link me-1"></i><strong>어쩜조아 연동</strong> · ';
+      if (status.ok === false) {
+        html += `<span class="text-danger">마지막 동기화 실패 (${escapeHtml(status.at || '')})</span>`;
+      } else if (status.at) {
+        html += `어쩜조아에서 시상한 핀은 자동으로 지급완료 처리됩니다 · 마지막 동기화 ${escapeHtml(status.at)}`;
+      } else {
+        html += '아직 동기화 전';
+      }
+      if (status.unmatched && status.unmatched.length) {
+        html += `<div class="mt-1 text-danger">어쩜조아 명단에 없는 이름(연동 안 됨): ${status.unmatched.map(escapeHtml).join(', ')}</div>`;
+      }
+      el.innerHTML = html;
+      el.style.display = 'block';
+    }
+
+    function switchAdminTab(tab) {
+      currentAdminTab = tab;
+      document.getElementById('adminTabUsers').classList.toggle('active', tab === 'users');
+      document.getElementById('adminTabPendingPins').classList.toggle('active', tab === 'pendingPins');
+      document.getElementById('adminTabWeekly').classList.toggle('active', tab === 'weekly');
+
+      document.getElementById('adminViewUsers').style.display = (tab === 'users') ? 'block' : 'none';
+      document.getElementById('adminViewPendingPins').style.display = (tab === 'pendingPins') ? 'block' : 'none';
+      document.getElementById('adminViewWeekly').style.display = (tab === 'weekly') ? 'block' : 'none';
+
+      if (tab === 'users') {
+        renderAdminCards();
+      } else if (tab === 'pendingPins') {
+        renderPendingPinsTab();
+      } else if (tab === 'weekly') {
+        renderWeeklyStats();
+      }
+    }
+
+    function updatePendingPinsBadge() {
+      let pendingTotal = 0;
+      adminUsersData.forEach(user => {
+        const stats = calculateStats(user.readChaptersMap || {});
+        const applicablePins = getApplicablePinCategories(user.group);
+        const pendingPins = stats.eligiblePins.filter(pin => applicablePins.includes(pin) && !user.grantedPins.includes(pin));
+        pendingTotal += pendingPins.length;
+      });
+
+      const badge = document.getElementById('pendingPinBadgeCount');
+      if (pendingTotal > 0) {
+        badge.innerText = pendingTotal;
+        badge.style.display = 'inline-block';
+      } else {
+        badge.style.display = 'none';
+      }
+    }
+
+    function setAdminUserFilter(filterGroup) {
+      adminUserFilterValue = filterGroup;
+      document.querySelectorAll('#userFilterButtons .admin-filter-btn').forEach(btn => {
+        btn.classList.remove('active');
+        if (btn.innerText.trim() === (filterGroup === 'ALL' ? '전체' : filterGroup)) {
+          btn.classList.add('active');
+        }
+      });
+      renderAdminCards();
+    }
+
+    // 관리자 기능의 서버 오류 공통 처리.
+    // 관리자 세션이 만료된 경우(최대 6시간)에는 안내 후 관리자 로그인 화면으로 돌려보낸다.
+    function handleAdminServerError(err, fallbackMsg) {
+      console.error(fallbackMsg, err);
+      const msg = (err && err.message) ? err.message : String(err || '');
+      if (msg.indexOf('관리자 세션') !== -1) {
+        toast('관리자 로그인 시간이 만료되었습니다. 다시 로그인해주세요.', 'warning');
+        adminSessionToken = null;
+        adminUsersData = [];
+        document.getElementById('adminMainSection').style.display = 'none';
+        document.getElementById('authSection').style.display = 'block';
+        document.getElementById('userPw').value = '';
+        switchAuthMode('admin');
+        return;
+      }
+      toast(fallbackMsg, 'error');
+    }
+
+    // 비밀번호는 관리자도 볼 수 없고, 잊은 경우 새로 정해주기만 한다.
+    async function resetUserPasswordPrompt(userId) {
+      const target = adminUsersData.find(u => u.id === userId);
+      if (!target) return;
+      const userName = target.name;
+      const newPw = await appPrompt(`${userName} 님의 새 비밀번호를 입력하세요.\n(숫자 4~8자리, 본인에게 알려주세요)`, { okText: '재설정', placeholder: '새 비밀번호' });
+      if (newPw === null) return; // 취소
+
+      const pwStr = String(newPw).trim();
+      if (!/^\d{4,8}$/.test(pwStr)) {
+        toast('비밀번호는 숫자 4자리 이상 8자리 이하로 입력해주세요.', 'warning');
+        return;
+      }
+
+      google.script.run
+        .withSuccessHandler(res => {
+          if (res && res.success) {
+            toast(`${userName} 님의 비밀번호가 재설정되었습니다.`, 'success');
+          } else {
+            toast((res && res.message) || '비밀번호 재설정에 실패했습니다.', 'error');
+          }
+        })
+        .withFailureHandler(err => handleAdminServerError(err, '네트워크 오류로 비밀번호를 재설정하지 못했습니다. 다시 시도해주세요.'))
+        .adminResetUserPassword(adminSessionToken, userId, pwStr);
+    }
+
+    function renderAdminCards() {
+      const container = document.getElementById('adminUserCardsContainer');
+      container.innerHTML = '';
+
+      updatePendingPinsBadge();
+
+      const sortedUsers = sortUsersByGroup(adminUsersData);
+
+      sortedUsers.forEach(user => {
+        if (adminUserFilterValue !== 'ALL' && user.group !== adminUserFilterValue) return;
+
+        const stats = calculateStats(user.readChaptersMap || {});
+        const card = document.createElement('div');
+        card.className = 'admin-user-card';
+
+        const applicablePins = getApplicablePinCategories(user.group);
+        const rowsPins = chunkArray(applicablePins, 4);
+
+        let pinsGridHtml = '';
+        rowsPins.forEach(row => {
+          pinsGridHtml += '<div class="row g-1 mb-1">';
+          row.forEach(pin => {
+            const isEligible = stats.eligiblePins.includes(pin);
+            const isGranted = user.grantedPins.includes(pin);
+            const isDisabled = !isEligible && !isGranted;
+
+            let chipBg = '#E9ECEF';
+            let chipText = '#6C757D';
+            if (isGranted) {
+              chipBg = '#D1E7DD';
+              chipText = '#0F5132';
+            } else if (isEligible) {
+              chipBg = '#FFF3CD';
+              chipText = '#664D03';
+            }
+
+            pinsGridHtml += `
+              <div class="col-3">
+                <div class="admin-pin-chip" style="background-color: ${chipBg}; color: ${chipText};">
+                  <span class="text-truncate">${pin}</span>
+                  <input type="checkbox" class="form-check-input m-0" id="pin_${user.id}_${pin}"
+                    ${isGranted ? 'checked' : ''}
+                    ${(isDisabled || (isEligible && !isGranted)) ? 'disabled' : ''}
+                    onclick="handleAdminPinClick(event, '${user.id}', '${pin}', ${isGranted})">
+                </div>
+              </div>
+            `;
+          });
+          pinsGridHtml += '</div>';
+        });
+
+        const safeGroup = escapeHtml(user.group);
+        const safeId = escapeHtml(user.id);
+        card.innerHTML = `
+          <div class="admin-user-card-top">
+            <div class="d-flex align-items-center gap-2">
+              <span class="badge badge-group-${safeGroup}">${safeGroup}</span>
+              <span class="admin-user-name">${escapeHtml(user.name)}</span>
+            </div>
+
+            <div class="admin-user-stat-row">
+              <div class="text-primary" style="font-size:0.78rem; font-weight:bold;">
+                ${stats.totalRead}/${stats.totalChapters}장
+                <span class="text-muted" style="font-size:0.7rem;">(${stats.totalPercent}%)</span>
+              </div>
+              <div class="d-flex align-items-center gap-2">
+                <button class="btn btn-outline-info btn-stat-large" onclick="openAdminUserStats('${safeId}')" title="통계 보기">
+                  <i class="fa-solid fa-chart-pie me-1"></i>통계
+                </button>
+                <button class="btn btn-outline-success btn-del-small" onclick="openPastRecordEditor('${safeId}')" title="앱 사용 전에 읽은 장 입력">
+                  <i class="fa-solid fa-book-bookmark me-1"></i>지난 기록
+                </button>
+                <button class="btn btn-outline-warning btn-del-small" onclick="resetUserPasswordPrompt('${safeId}')" title="비밀번호 재설정">
+                  <i class="fa-solid fa-key me-1"></i>비번 재설정
+                </button>
+                <button class="btn btn-outline-danger btn-del-small" onclick="deleteUserConfirm('${safeId}')" title="사용자 삭제">
+                  <i class="fa-solid fa-trash-can"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+          <div class="admin-user-card-bottom">
+            <div class="text-muted mb-1 small fw-bold" style="font-size:0.7rem;"><i class="fa-solid fa-award me-1"></i>성경 통독핀 현황</div>
+            ${pinsGridHtml}
+          </div>
+        `;
+
+        container.appendChild(card);
+      });
+    }
+
+    function renderPendingPinsTab() {
+      const container = document.getElementById('pendingPinsContainer');
+      container.innerHTML = '';
+
+      const selectAllBtn = document.getElementById('pendingSelectAllBtn');
+      if (selectAllBtn) selectAllBtn.innerHTML = '<i class="fa-solid fa-check-double me-1"></i>전체 선택';
+
+      let hasPending = false;
+      const sortedUsers = sortUsersByGroup(adminUsersData);
+
+      sortedUsers.forEach(user => {
+        const stats = calculateStats(user.readChaptersMap || {});
+        const applicablePins = getApplicablePinCategories(user.group);
+        const pendingPins = stats.eligiblePins.filter(pin => applicablePins.includes(pin) && !user.grantedPins.includes(pin));
+
+        if (pendingPins.length > 0) {
+          hasPending = true;
+          const pCard = document.createElement('div');
+          pCard.className = 'card border-warning mb-3 shadow-sm';
+
+          let pinBadgesHtml = '<div class="d-flex flex-wrap gap-2">';
+          pendingPins.forEach(pin => {
+            pinBadgesHtml += `
+              <div class="form-check form-check-inline p-2 border border-warning rounded bg-light m-0 d-flex align-items-center">
+                <input class="form-check-input m-0 me-2" type="checkbox" id="pend_${user.id}_${pin}"
+                  data-user-id="${user.id}" data-pin="${pin}"
+                  onclick="togglePendingPinCheck('${user.id}', '${pin}', this.checked)">
+                <label class="form-check-label fw-bold text-dark small" for="pend_${user.id}_${pin}">
+                  ${pin}
+                </label>
+              </div>
+            `;
+          });
+          pinBadgesHtml += '</div>';
+
+          pCard.innerHTML = `
+            <div class="card-body p-3">
+              <div class="d-flex justify-content-between align-items-center mb-2">
+                <div>
+                  <span class="badge badge-group-${escapeHtml(user.group)} me-1">${escapeHtml(user.group)}</span>
+                  <h6 class="d-inline fw-bold mb-0">${escapeHtml(user.name)}</h6>
+                </div>
+                <span class="badge bg-warning text-dark fw-bold">지급 대기 핀 ${pendingPins.length}개</span>
+              </div>
+              <div class="mt-2">
+                ${pinBadgesHtml}
+              </div>
+            </div>
+          `;
+          container.appendChild(pCard);
+        }
+      });
+
+      if (!hasPending) {
+        container.innerHTML = `
+          <div class="text-center py-5 text-muted">
+            <i class="fa-solid fa-circle-check text-success fs-1 mb-2"></i>
+            <div class="fw-bold">현재 지급 대기 중인 핀이 없습니다!</div>
+            <div class="small">모든 대상자에게 핀 지급이 완료되었거나 완독 대기 중입니다.</div>
+          </div>
+        `;
+      }
+    }
+
+    function toggleSelectAllPendingPins() {
+      const checkboxes = Array.from(document.querySelectorAll('#pendingPinsContainer input[type="checkbox"]'));
+      if (checkboxes.length === 0) return;
+
+      // 현재 전부 체크된 상태라면 전체 해제, 아니면(하나라도 안 체크됐다면) 전체 선택
+      const allChecked = checkboxes.every(cb => cb.checked);
+      const newState = !allChecked;
+
+      checkboxes.forEach(cb => {
+        cb.checked = newState;
+        toggleAdminPin(cb.dataset.userId, cb.dataset.pin, newState);
+      });
+
+      const btn = document.getElementById('pendingSelectAllBtn');
+      if (btn) {
+        btn.innerHTML = newState
+          ? '<i class="fa-solid fa-xmark me-1"></i>전체 해제'
+          : '<i class="fa-solid fa-check-double me-1"></i>전체 선택';
+      }
+    }
+
+    function togglePendingPinCheck(userId, pin, isChecked) {
+      toggleAdminPin(userId, pin, isChecked);
+    }
+
+    function init15WeeksSelector() {
+      const sel = document.getElementById('weeklyWeekSelector');
+      if (!sel) return;
+      sel.innerHTML = '';
+
+      const now = getSeoulNow();
+      const currentDay = now.getDay();
+      const diffToMonday = (currentDay === 0 ? -6 : 1) - currentDay;
+
+      for (let i = 0; i < 15; i++) {
+        const mon = new Date(now);
+        mon.setDate(now.getDate() + diffToMonday - (i * 7));
+        mon.setHours(0, 0, 0, 0);
+
+        const sun = new Date(mon);
+        sun.setDate(mon.getDate() + 6);
+        sun.setHours(23, 59, 59, 999);
+
+        const month = mon.getMonth() + 1;
+        const weekNum = Math.ceil(mon.getDate() / 7);
+        const label = `${mon.getFullYear()}년 ${month}월 ${weekNum}주차 (${month}/${mon.getDate()} ~ ${sun.getMonth() + 1}/${sun.getDate()})${i === 0 ? ' [이번주]' : ''}`;
+
+        const opt = document.createElement('option');
+        opt.value = i;
+        opt.innerText = label;
+        sel.appendChild(opt);
+      }
+    }
+
+    function setWeeklyFilter(filterGroup) {
+      adminWeeklyFilterValue = filterGroup;
+      document.querySelectorAll('#weeklyFilterButtons .admin-filter-btn').forEach(btn => {
+        btn.classList.remove('active');
+        if (btn.innerText.trim() === (filterGroup === 'ALL' ? '전체' : filterGroup)) {
+          btn.classList.add('active');
+        }
+      });
+      renderWeeklyStats();
+    }
+
+    function renderWeeklyStats() {
+      const tbody = document.getElementById('weeklyStatsTableBody');
+      tbody.innerHTML = '';
+
+      const weekIndex = parseInt(document.getElementById('weeklyWeekSelector').value || '0');
+      const now = getSeoulNow();
+      const currentDay = now.getDay();
+      const diffToMonday = (currentDay === 0 ? -6 : 1) - currentDay;
+
+      const targetMon = new Date(now);
+      targetMon.setDate(now.getDate() + diffToMonday - (weekIndex * 7));
+      targetMon.setHours(0, 0, 0, 0);
+
+      const targetSun = new Date(targetMon);
+      targetSun.setDate(targetMon.getDate() + 6);
+      targetSun.setHours(23, 59, 59, 999);
+
+      let groupCountsThisWeek = { '스팍스': 0, '티앤티': 0, '선생님': 0 };
+      const sortedUsers = sortUsersByGroup(adminUsersData);
+
+      sortedUsers.forEach(user => {
+        if (adminWeeklyFilterValue !== 'ALL' && user.group !== adminWeeklyFilterValue) return;
+
+        let selectedWeekCount = 0;
+        let latestFullDate = '';   // 가장 최근에 읽은 날짜 ("YYYY-MM-DD"는 문자열 비교로 최신을 찾을 수 있다)
+
+        const readMap = user.readChaptersMap || {};
+        Object.values(readMap).forEach(item => {
+          const fullDateStr = getFullDateStr(item);
+          if (!fullDateStr) return;
+
+          const itemDate = new Date(fullDateStr + 'T00:00:00');
+          if (itemDate >= targetMon && itemDate <= targetSun) {
+            selectedWeekCount++;
+          }
+          if (fullDateStr > latestFullDate) latestFullDate = fullDateStr;
+        });
+        const lastReadDate = latestFullDate ? getShortDateStr(latestFullDate) : '-';
+
+        if (groupCountsThisWeek[user.group] !== undefined) {
+          groupCountsThisWeek[user.group] += selectedWeekCount;
+        }
+
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td><span class="badge badge-group-${escapeHtml(user.group)}">${escapeHtml(user.group)}</span></td>
+          <td class="fw-bold">${escapeHtml(user.name)}</td>
+          <td><span class="badge bg-primary rounded-pill px-2 py-1">${selectedWeekCount}장</span></td>
+          <td class="small text-muted">${lastReadDate}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      document.getElementById('weeklyGroupSummary').innerHTML = `
+        <div><span class="badge badge-group-스팍스 me-1">스팍스</span><strong>${groupCountsThisWeek['스팍스']}장</strong></div>
+        <div><span class="badge badge-group-티앤티 me-1">티앤티</span><strong>${groupCountsThisWeek['티앤티']}장</strong></div>
+        <div><span class="badge badge-group-선생님 me-1">선생님</span><strong>${groupCountsThisWeek['선생님']}장</strong></div>
+      `;
+    }
+
+    // ------------------------------------------------------------
+    // 관리자: 지난 기록 입력 (앱 사용 전에 읽은 장)
+    //  - 읽지 않은 장을 누르면 '이전'으로 추가, 읽은 장을 누르면 표시 해제 (저장 전까지는 점선으로 표시)
+    //  - [저장]을 눌러야 서버에 반영된다
+    // ------------------------------------------------------------
+    let pastRecordModalObj = null;
+    let pastEdit = null;   // { userId, name, base, adds:Set, removes:Set, testament, book }
+
+    function openPastRecordEditor(userId) {
+      const user = adminUsersData.find(u => u.id === userId);
+      if (!user) return;
+      if (!pastRecordModalObj) pastRecordModalObj = new bootstrap.Modal(document.getElementById('pastRecordModal'));
+      pastEdit = {
+        userId, name: user.name,
+        base: Object.assign({}, user.readChaptersMap || {}),
+        adds: new Set(), removes: new Set(),
+        testament: 'OT', book: null
+      };
+      document.getElementById('pastRecordTitle').innerHTML =
+        `<i class="fa-solid fa-book-bookmark me-1 text-success"></i>${escapeHtml(user.name)} · 지난 기록 입력`;
+      switchPastTestament('OT');
+      updatePastSaveBtn();
+      pastRecordModalObj.show();
+    }
+
+    async function closePastRecordEditor() {
+      if (pastEdit && (pastEdit.adds.size || pastEdit.removes.size)) {
+        if (!(await appConfirm('저장하지 않은 변경이 있어요. 저장하지 않고 닫을까요?', { okText: '닫기', danger: true }))) return;
+      }
+      pastEdit = null;
+      if (pastRecordModalObj) pastRecordModalObj.hide();
+    }
+
+    function isPastRead(key) {
+      if (pastEdit.adds.has(key)) return true;
+      if (pastEdit.removes.has(key)) return false;
+      return pastEdit.base[key] !== undefined;
+    }
+
+    function switchPastTestament(t) {
+      pastEdit.testament = t;
+      document.getElementById('pastTabOT').classList.toggle('active', t === 'OT');
+      document.getElementById('pastTabNT').classList.toggle('active', t === 'NT');
+      const first = BIBLE_STRUCTURE.find(b => b.testament === t);
+      pastEdit.book = first ? first.name : null;
+      renderPastEditor();
+    }
+
+    function selectPastBook(name) {
+      pastEdit.book = name;
+      renderPastEditor();
+    }
+
+    function renderPastEditor() {
+      if (!pastEdit) return;
+      const booksGrid = document.getElementById('pastBooksGrid');
+      booksGrid.innerHTML = '';
+      BIBLE_STRUCTURE.filter(b => b.testament === pastEdit.testament).forEach(b => {
+        let readCount = 0, changed = false;
+        for (let ch = 1; ch <= b.chapters; ch++) {
+          const key = `${b.name}_${ch}`;
+          if (isPastRead(key)) readCount++;
+          if (pastEdit.adds.has(key) || pastEdit.removes.has(key)) changed = true;
+        }
+        const card = document.createElement('div');
+        card.className = `book-card-mobile book-card-${b.category} ${readCount === b.chapters ? 'completed-book' : ''} ${pastEdit.book === b.name ? 'active-book' : ''}`;
+        card.innerHTML = `<div class="book-card-name">${b.name}${changed ? ' •' : ''}</div><div style="font-size:0.6rem; opacity:0.85;">${readCount}/${b.chapters}</div>`;
+        card.onclick = () => selectPastBook(b.name);
+        booksGrid.appendChild(card);
+      });
+
+      const book = BIBLE_STRUCTURE.find(b => b.name === pastEdit.book);
+      const section = document.getElementById('pastChapterSection');
+      if (!book) { section.style.display = 'none'; return; }
+      section.style.display = 'block';
+      document.getElementById('pastBookTitle').innerText = book.name;
+
+      const grid = document.getElementById('pastChapterGrid');
+      grid.innerHTML = '';
+      let readCount = 0;
+      for (let ch = 1; ch <= book.chapters; ch++) {
+        const key = `${book.name}_${ch}`;
+        const read = isPastRead(key);
+        if (read) readCount++;
+        const label = pastEdit.adds.has(key) ? '이전' : (read ? getShortDateStr(pastEdit.base[key]) : '');
+        const box = document.createElement('div');
+        box.className = `chapter-btn-box chapter-theme-${book.category} ${read ? 'read' : ''}`
+          + (pastEdit.adds.has(key) ? ' pending-add' : '') + (pastEdit.removes.has(key) ? ' pending-remove' : '');
+        box.innerHTML = `<div class="chapter-num">${ch}</div><div class="chapter-date">${label}</div>`;
+        box.onclick = () => togglePastChapter(key);
+        grid.appendChild(box);
+      }
+      document.getElementById('pastBookProgress').innerText = `${readCount} / ${book.chapters}장`;
+      const allBtn = document.getElementById('pastSelectAllBtn');
+      allBtn.innerText = readCount === book.chapters ? '전체 해제' : '전체 선택';
+      allBtn.className = `btn ${readCount === book.chapters ? 'btn-outline-danger' : 'btn-outline-primary'} py-1 px-2`;
+    }
+
+    function setPastRead(key, wantRead) {
+      const inBase = pastEdit.base[key] !== undefined;
+      pastEdit.adds.delete(key);
+      pastEdit.removes.delete(key);
+      if (wantRead && !inBase) pastEdit.adds.add(key);
+      if (!wantRead && inBase) pastEdit.removes.add(key);
+    }
+
+    function togglePastChapter(key) {
+      setPastRead(key, !isPastRead(key));
+      renderPastEditor();
+      updatePastSaveBtn();
+    }
+
+    function togglePastBookAll() {
+      const book = BIBLE_STRUCTURE.find(b => b.name === pastEdit.book);
+      if (!book) return;
+      let readCount = 0;
+      for (let ch = 1; ch <= book.chapters; ch++) if (isPastRead(`${book.name}_${ch}`)) readCount++;
+      const wantRead = readCount < book.chapters;
+      for (let ch = 1; ch <= book.chapters; ch++) setPastRead(`${book.name}_${ch}`, wantRead);
+      renderPastEditor();
+      updatePastSaveBtn();
+    }
+
+    function updatePastSaveBtn() {
+      const btn = document.getElementById('pastSaveBtn');
+      const a = pastEdit ? pastEdit.adds.size : 0, r = pastEdit ? pastEdit.removes.size : 0;
+      btn.disabled = (a + r) === 0;
+      const parts = [];
+      if (a) parts.push(`+${a}장`);
+      if (r) parts.push(`−${r}장`);
+      btn.innerHTML = `<i class="fa-solid fa-floppy-disk me-1"></i>저장${parts.length ? ' (' + parts.join(', ') + ')' : ''}`;
+    }
+
+    function savePastRecords() {
+      if (!pastEdit) return;
+      const edit = pastEdit;
+      const btn = document.getElementById('pastSaveBtn');
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1"></i>저장 중...';
+
+      const before = calculateStats(edit.base).eligiblePins;
+      google.script.run
+        .withSuccessHandler(res => {
+          if (!res || !res.success) {
+            toast((res && res.message) || '저장하지 못했습니다.', 'error');
+            updatePastSaveBtn();
+            return;
+          }
+          adminUsersData = sortUsersByGroup(res.users || []); renderOzzmStatus(res.ozzmStatus);
+          renderAdminCards();
+          renderPendingPinsTab();
+          const saved = adminUsersData.find(u => u.id === edit.userId);
+          const after = saved ? calculateStats(saved.readChaptersMap || {}).eligiblePins : [];
+          const newlyDone = after.filter(p => !before.includes(p) && !(saved.grantedPins || []).includes(p));
+          pastEdit = null;
+          pastRecordModalObj.hide();
+          toast(`${edit.name} 님의 지난 기록을 저장했습니다.`, 'success');
+          if (newlyDone.length) {
+            toast(`새로 완독: ${newlyDone.join(', ')}\n이미 받은 핀이면 핀 현황에서 지급완료로 체크하세요. 체크하지 않으면 어쩜조아 시상 대기에 나타납니다.`, 'info', 9000);
+          }
+        })
+        .withFailureHandler(err => {
+          updatePastSaveBtn();
+          handleAdminServerError(err, '네트워크 오류로 지난 기록을 저장하지 못했습니다. 다시 시도해주세요.');
+        })
+        .adminSaveReadingRecords(adminSessionToken, edit.userId, Array.from(edit.adds), Array.from(edit.removes));
+    }
+
+    function openAdminUserStats(userId) {
+      const targetUser = adminUsersData.find(u => u.id === userId);
+      if (targetUser) toggleUserStatsModal(targetUser);
+    }
+
+    // 회원 현황 탭의 핀: 지급은 "핀 현황" 탭에서 하고,
+    // 여기서는 이미 지급된(초록색) 핀의 지급 취소만 할 수 있다. 취소는 즉시 서버에 저장된다.
+    function handleAdminPinClick(event, userId, pin, isCurrentlyGranted) {
+      const checkbox = event.target;
+
+      // 회원 현황에서 아직 지급되지 않은 노란색(지급 대상) 핀은
+      // 체크할 수 없도록 표시 전용으로 유지합니다.
+      if (!isCurrentlyGranted) {
+        checkbox.checked = false;
+        event.preventDefault();
+        return;
+      }
+
+      // 회원 현황에서 이미 지급완료(초록색)인 핀을 클릭하면
+      // 지급완료 취소 여부를 확인합니다.
+      if (!checkbox.checked) {
+        // 확인 전까지는 체크 상태(지급완료)를 그대로 유지한다.
+        event.preventDefault();
+        const target = adminUsersData.find(u => u.id === userId);
+        const who = target ? `${target.name} 님의 ` : '';
+        appConfirm(`${who}'${pin}' 핀 지급완료를 취소할까요?`, { okText: '지급 취소', danger: true })
+          .then(ok => { if (ok) cancelGrantedPinNow(userId, pin, checkbox); });
+        return;
+      }
+
+      // 회원 현황의 지급완료 핀을 다시 체크하는 동작은 허용하지 않습니다.
+      checkbox.checked = true;
+      event.preventDefault();
+    }
+
+    // 지급 취소를 이 사용자 한 명에 대해서만 즉시 서버에 저장한다.
+    // (핀 현황 탭에서 체크만 해두고 아직 저장하지 않은 다른 사용자의 변경은 건드리지 않는다)
+    function cancelGrantedPinNow(userId, pin, checkbox) {
+      const target = adminUsersData.find(u => u.id === userId);
+      if (!target) return;
+      const newPins = (target.grantedPins || []).filter(p => p !== pin);
+      if (checkbox) checkbox.disabled = true;
+
+      google.script.run
+        .withSuccessHandler(res => {
+          if (res && res.success) {
+            const serverUser = (res.users || []).find(u => u.id === userId);
+            target.grantedPins = serverUser ? serverUser.grantedPins : newPins;
+          } else {
+            toast((res && res.message) || '지급 취소를 저장하지 못했습니다.', 'error');
+          }
+          renderAdminCards();
+          renderPendingPinsTab();
+          updatePendingPinsBadge();
+        })
+        .withFailureHandler(err => {
+          renderAdminCards();
+          handleAdminServerError(err, '네트워크 오류로 지급 취소를 저장하지 못했습니다. 다시 시도해주세요.');
+        })
+        .saveAllPinStatuses(adminSessionToken, [{ id: userId, grantedPins: newPins }]);
+    }
+
+    // 핀 현황 탭의 체크 상태를 화면 데이터에 반영한다. (서버 저장은 업데이트 버튼에서)
+    function toggleAdminPin(userId, pin, isChecked) {
+      const targetUser = adminUsersData.find(u => u.id === userId);
+      if (!targetUser) return;
+
+      let grantedSet = new Set(targetUser.grantedPins || []);
+      if (isChecked) grantedSet.add(pin);
+      else grantedSet.delete(pin);
+
+      targetUser.grantedPins = Array.from(grantedSet);
+      updatePendingPinsBadge();
+    }
+
+    async function saveAndBatchUpdatePins() {
+      if (!(await appConfirm('체크한 통독핀을 지급 완료로 저장할까요?', { okText: '저장' }))) return;
+
+      const pendBtn = document.getElementById('savePendingPinsBtn');
+      if (pendBtn) { pendBtn.disabled = true; pendBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1"></i>저장 중...'; }
+
+      google.script.run
+        .withSuccessHandler(res => {
+          if (pendBtn) { pendBtn.disabled = false; pendBtn.innerHTML = '<i class="fa-solid fa-check me-1"></i>핀 지급 상태 업데이트'; }
+
+          if (res.success) {
+            adminUsersData = sortUsersByGroup(res.users || []); renderOzzmStatus(res.ozzmStatus);
+            renderAdminCards();
+            renderPendingPinsTab();
+            toast('핀 지급 상태를 저장했습니다.', 'success');
+          } else {
+            toast((res && res.message) || '저장 중 오류가 발생했습니다.', 'error');
+          }
+        })
+        .withFailureHandler(err => {
+          if (pendBtn) { pendBtn.disabled = false; pendBtn.innerHTML = '<i class="fa-solid fa-check me-1"></i>핀 지급 상태 업데이트'; }
+          handleAdminServerError(err, '네트워크 오류로 저장하지 못했습니다. 인터넷 연결을 확인 후 다시 시도해주세요.');
+        })
+        // 핀 정보만 보낸다. (읽은 기록 등 큰 데이터는 보낼 필요가 없음)
+        .saveAllPinStatuses(adminSessionToken, adminUsersData.map(u => ({ id: u.id, grantedPins: u.grantedPins || [] })));
+    }
+
+    async function deleteUserConfirm(userId) {
+      const target = adminUsersData.find(u => u.id === userId);
+      if (!target) return;
+      const userName = target.name;
+      if (await appConfirm(`'${userName}' 사용자를 삭제할까요?\n읽은 기록과 핀 기록이 모두 지워집니다.`, { okText: '삭제', danger: true })) {
+        google.script.run
+          .withSuccessHandler(res => {
+            if (res && res.success) {
+              toast('삭제되었습니다.', 'success');
+              adminUsersData = sortUsersByGroup(res.users || []); renderOzzmStatus(res.ozzmStatus);
+              renderAdminCards();
+              renderPendingPinsTab();
+            } else {
+              toast((res && res.message) || '삭제 중 오류가 발생했습니다.', 'error');
+            }
+          })
+          .withFailureHandler(err => handleAdminServerError(err, '네트워크 오류로 삭제하지 못했습니다. 인터넷 연결을 확인 후 다시 시도해주세요.'))
+          .deleteUser(adminSessionToken, userId);
+      }
+    }
+
+    function openAdminPasswordModal() {
+      document.getElementById('curAdminPw').value = '';
+      document.getElementById('newAdminPw').value = '';
+      adminPwModalObj.show();
+    }
+
+    function handleAdminPwChange(e) {
+      e.preventDefault();
+      const curPw = document.getElementById('curAdminPw').value.trim();
+      const newPw = document.getElementById('newAdminPw').value.trim();
+
+      if (!/^\d{4,8}$/.test(newPw)) {
+        toast('새 비밀번호는 숫자 4자리 이상 8자리 이하로 입력해주세요.', 'warning');
+        return;
+      }
+
+      google.script.run
+        .withSuccessHandler(res => {
+          if (res.success) {
+            toast(res.message, 'success');
+            adminPwModalObj.hide();
+          } else {
+            toast(res.message, 'warning');
+          }
+        })
+        .withFailureHandler(err => {
+          adminPwModalObj.hide();
+          handleAdminServerError(err, '네트워크 오류로 비밀번호를 변경하지 못했습니다. 인터넷 연결을 확인 후 다시 시도해주세요.');
+        })
+        .changeAdminPassword(adminSessionToken, curPw, newPw);
+    }
+  </script>
+</body>
+</html>
