@@ -227,6 +227,9 @@
       letter-spacing: -0.5px;
     }
     .book-card-mobile.active-book { border: 2.5px solid var(--awana-yellow) !important; }
+    /* 이미 핀을 받은 범위의 책: 오른쪽 위 작은 메달 */
+    .book-card-mobile { position: relative; }
+    .book-pin-badge { position: absolute; top: 1px; right: 2px; font-size: 0.6rem; line-height: 1; }
 
     /* 부드러운 완독 색상 */
     .book-card-모세오경 { background-color: var(--cat-bg-모세오경); color: var(--cat-text-모세오경); border-color: #C8E6C9; }
@@ -1742,7 +1745,10 @@
         const isAll = (cat === '전체');
         const isActive = (isAll && currentCategoryFilter === 'ALL') || (currentCategoryFilter === cat);
         btn.className = `category-filter-btn cat-${cat} ${isActive ? 'active' : ''}`;
-        btn.innerText = cat;
+        // 이미 핀을 받은 범위는 🏅 표시 (구약·신약·신구약 핀을 받았으면 그 안의 범위도 모두 받은 것으로 본다)
+        const catReceived = !isAll && isCategoryPinReceived(cat, currentTestament);
+        btn.innerText = catReceived ? `${cat} 🏅` : cat;
+        if (catReceived) btn.title = '이미 핀을 받은 범위예요';
         btn.onclick = () => {
           currentCategoryFilter = isAll ? 'ALL' : cat;
           renderCategoryFilters();
@@ -1775,7 +1781,9 @@
         const btn = document.createElement('div');
         btn.className = `book-card-mobile book-card-${b.category} ${isCompleted ? 'completed-book' : ''} ${currentSelectedBook === b.name ? 'active-book' : ''}`;
         btn.onclick = () => focusRecentChapterForScope([b]);
+        const pinReceived = isBookLocked(b);
         btn.innerHTML = `
+          ${pinReceived ? '<span class="book-pin-badge" title="이미 핀을 받은 범위예요">🏅</span>' : ''}
           <div class="book-card-name">${b.name}</div>
           <div style="font-size:0.6rem; opacity:0.85;">${readCount}/${b.chapters}</div>
         `;
@@ -1809,6 +1817,14 @@
 
     // 관리자가 핀을 지급한 카테고리(구약/신약/신구약/세부 카테고리)에 속한 성경은
     // 지급이 취소되기 전까지 장 클릭(수정)을 막는다.
+    function isCategoryPinReceived(category, testament) {
+      if (!userGrantedPins || userGrantedPins.length === 0) return false;
+      if (userGrantedPins.includes(category) || userGrantedPins.includes('신구약')) return true;
+      if (testament === 'OT' && userGrantedPins.includes('구약')) return true;
+      if (testament === 'NT' && userGrantedPins.includes('신약')) return true;
+      return false;
+    }
+
     function isBookLocked(book) {
       if (!book || !userGrantedPins || userGrantedPins.length === 0) return false;
       if (userGrantedPins.includes(book.category)) return true;
