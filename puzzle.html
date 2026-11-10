@@ -61,6 +61,7 @@
   .slot.hint { animation:pzPulse 1s ease-in-out infinite; }
   @keyframes pzPulse { 0%,100% { fill:#F1F5F9; stroke:#94A3B8; } 50% { fill:#FFE8A3; stroke:#FFB703; } }
   .slot-num { fill:#A0AEC0; font-size:28px; font-weight:700; text-anchor:middle; dominant-baseline:central; pointer-events:none; }
+  .badge-num { fill:#fff; font-size:20px; font-weight:800; text-anchor:middle; dominant-baseline:central; pointer-events:none; }
   .tray { fill:#FFF8E1; stroke:#FFE08A; stroke-width:2; stroke-dasharray:6 5; }
   .tray-label { fill:#D9A400; font-size:15px; font-weight:700; pointer-events:none; }
   .edge { fill:none; stroke:rgba(0,0,0,.2); stroke-width:1; transition:stroke .8s; }
@@ -159,7 +160,15 @@
   function puzzleOf(ch) { return PUZZLES.findIndex(p => ch >= p.from && ch <= p.to); }
   function chaptersOf(p) { const a = []; for (let c = p.from; c <= p.to; c++) a.push(c); return a; }
   // 칸 번호: 0 = 제목, 1.. = 장
-  function cellOfChapter(p, ch) { return ch - p.from + 1; }
+  // 장 번호 자리는 섞어 둔다 (퍼즐마다 정해진 순서라 다시 열어도 같은 자리)
+  function cellOfChapter(p, ch) { return p.map[ch]; }
+  PUZZLES.forEach((p, pi) => {
+    const r = rng(777 + pi * 31), cells = [];
+    for (let i = 1; i <= p.to - p.from + 1; i++) cells.push(i);
+    for (let i = cells.length - 1; i > 0; i--) { const j = Math.floor(r() * (i + 1)); [cells[i], cells[j]] = [cells[j], cells[i]]; }
+    p.map = {};
+    cells.forEach((cell, i) => { p.map[p.from + i] = cell; });
+  });
   function cellXY(p, idx) { return { x: (idx % p.cols) * CELL, y: Math.floor(idx / p.cols) * CELL }; }
 
   // ---------- 조각 모양 (직소 퍼즐 볼록/오목) ----------
@@ -230,25 +239,138 @@
     cv.width = W * S; cv.height = Hh * S;
     const g = cv.getContext('2d');
     g.scale(S, S);
-    g.fillStyle = p.bg; g.fillRect(0, 0, W, Hh);
     g.textAlign = 'center'; g.textBaseline = 'middle';
-    // 제목 칸
-    g.fillStyle = p.ink; roundRect(g, 6, 6, CELL - 12, CELL - 12, 14); g.fill();
-    g.font = `40px ${EMOJI_FONT}`; g.fillText(p.emoji, 50, 36);
-    g.fillStyle = '#fff'; fitText(g, p.title, 82, 15, 800, TEXT_FONT); g.fillText(p.title, 50, 70);
-    g.font = `600 10px ${TEXT_FONT}`; g.fillText(`${BOOK} ${p.from}–${p.to}장`, 50, 86);
-    // 장 칸
-    chaptersOf(p).forEach(ch => {
-      const { x, y } = cellXY(p, cellOfChapter(p, ch));
-      const [emo, cap] = SCENES[ch];
-      g.fillStyle = 'rgba(255,255,255,.6)'; roundRect(g, x + 6, y + 6, CELL - 12, CELL - 12, 14); g.fill();
-      g.font = `44px ${EMOJI_FONT}`; g.fillText(emo, x + 50, y + 46);
-      g.fillStyle = p.ink; g.beginPath(); g.arc(x + 19, y + 19, 11, 0, Math.PI * 2); g.fill();
-      g.fillStyle = '#fff'; g.font = `800 12px ${TEXT_FONT}`; g.fillText(String(ch), x + 19, y + 19.5);
-      g.fillStyle = '#334155'; fitText(g, cap, 84, 12, 700, TEXT_FONT); g.fillText(cap, x + 50, y + 83);
-    });
+    SCENE_DRAW[pi](g, W, Hh);
+    // 제목 (왼쪽 위 칸 — 처음부터 맞춰져 있는 조각)
+    g.fillStyle = 'rgba(255,255,255,.88)'; roundRect(g, 8, 8, CELL - 16, CELL - 16, 14); g.fill();
+    g.font = `34px ${EMOJI_FONT}`; g.fillText(p.emoji, 50, 34);
+    g.fillStyle = p.ink; fitText(g, p.title, 76, 14, 800, TEXT_FONT); g.fillText(p.title, 50, 65);
+    g.fillStyle = '#475569'; g.font = `600 10px ${TEXT_FONT}`; g.fillText(`${BOOK} ${p.from}–${p.to}장`, 50, 81);
     return (artCache[pi] = cv.toDataURL('image/png'));
   }
+
+  // ---------- 임시 그림: 퍼즐마다 장면 하나 ----------
+  function emo(g, e, x, y, size, rot) {
+    g.save(); g.translate(x, y); if (rot) g.rotate(rot);
+    g.font = `${size}px ${EMOJI_FONT}`; g.fillText(e, 0, 0); g.restore();
+  }
+  function grad(g, y0, y1, stops) {
+    const gr = g.createLinearGradient(0, y0, 0, y1);
+    stops.forEach((c, i) => gr.addColorStop(i / (stops.length - 1), c));
+    return gr;
+  }
+  function poly(g, pts, fill) {
+    g.beginPath(); g.moveTo(pts[0][0], pts[0][1]);
+    for (let i = 1; i < pts.length; i++) g.lineTo(pts[i][0], pts[i][1]);
+    g.closePath(); g.fillStyle = fill; g.fill();
+  }
+  function cloud(g, x, y, s) {
+    g.fillStyle = 'rgba(255,255,255,.92)';
+    [[0, 0, 22], [20, -8, 18], [38, 2, 16], [-18, 4, 14]].forEach(([dx, dy, r]) => {
+      g.beginPath(); g.arc(x + dx * s, y + dy * s, r * s, 0, Math.PI * 2); g.fill();
+    });
+  }
+  function hill(g, y, amp, color, W, Hh, phase) {
+    g.beginPath(); g.moveTo(0, Hh); g.lineTo(0, y);
+    for (let x = 0; x <= W; x += 10) g.lineTo(x, y + Math.sin(x / 60 + phase) * amp);
+    g.lineTo(W, Hh); g.closePath(); g.fillStyle = color; g.fill();
+  }
+  const SCENE_DRAW = [
+    // 창조와 노아: 무지개 아래 방주
+    function (g, W, Hh) {
+      g.fillStyle = grad(g, 0, 220, ['#6FB6FF', '#BFE3FF', '#EAF6FF']); g.fillRect(0, 0, W, Hh);
+      const sun = g.createRadialGradient(345, 55, 5, 345, 55, 60);
+      sun.addColorStop(0, '#FFF6A8'); sun.addColorStop(.45, '#FFD84D'); sun.addColorStop(1, 'rgba(255,216,77,0)');
+      g.fillStyle = sun; g.fillRect(270, 0, 130, 120);
+      ['#FF6B6B', '#FFA94D', '#FFE066', '#69DB7C', '#4DABF7', '#9775FA'].forEach((c, i) => {
+        g.beginPath(); g.arc(200, 250, 175 - i * 9, Math.PI, 0); g.lineWidth = 9; g.strokeStyle = c; g.globalAlpha = .55; g.stroke();
+      });
+      g.globalAlpha = 1;
+      cloud(g, 170, 40, 1); cloud(g, 265, 95, .8); cloud(g, 40, 150, .7);
+      poly(g, [[250, 225], [330, 105], [415, 225]], '#7C8B6A');
+      poly(g, [[312, 132], [330, 105], [349, 132], [338, 128], [328, 136], [320, 128]], '#FFFFFF');
+      g.fillStyle = grad(g, 215, 300, ['#3B82F6', '#1E40AF']); g.fillRect(0, 215, W, 85);
+      g.strokeStyle = 'rgba(255,255,255,.5)'; g.lineWidth = 2;
+      for (let r = 0; r < 4; r++) { g.beginPath(); for (let x = 0; x <= W; x += 8) g.lineTo(x, 232 + r * 18 + Math.sin(x / 14 + r) * 3); g.stroke(); }
+      poly(g, [[70, 196], [300, 196], [272, 246], [98, 246]], '#8B5A2B');
+      g.fillStyle = '#6B4220'; for (let y = 206; y < 246; y += 12) g.fillRect(84, y, 204, 2);
+      g.fillStyle = '#B07A45'; g.fillRect(118, 150, 132, 46);
+      poly(g, [[108, 152], [184, 118], [260, 152]], '#7A3E1D');
+      g.fillStyle = '#4A2A12'; [140, 175, 210].forEach(x => g.fillRect(x, 162, 18, 16));
+      emo(g, '🦒', 150, 128, 30); emo(g, '🐘', 228, 176, 24); emo(g, '🦁', 120, 186, 20);
+      emo(g, '🕊️', 300, 70, 30, -.15); emo(g, '🌿', 322, 82, 14, .4);
+      emo(g, '🐟', 45, 272, 18); emo(g, '🐠', 355, 268, 18); emo(g, '🐳', 380, 290, 16);
+    },
+    // 아브라함: 밤하늘의 별과 장막
+    function (g, W, Hh) {
+      g.fillStyle = grad(g, 0, 230, ['#081537', '#1E2F6B', '#47528F']); g.fillRect(0, 0, W, Hh);
+      const r = rng(4242);
+      g.fillStyle = '#fff';
+      for (let i = 0; i < 90; i++) { g.globalAlpha = .4 + r() * .6; g.beginPath(); g.arc(r() * W, r() * 200, r() * 1.6 + .4, 0, Math.PI * 2); g.fill(); }
+      g.globalAlpha = 1;
+      [[150, 40, 16], [230, 90, 12], [300, 30, 18], [380, 110, 13], [200, 150, 11], [120, 130, 12]].forEach(([x, y, s]) => emo(g, '⭐', x, y, s));
+      emo(g, '🌙', 450, 52, 44, -.3);
+      hill(g, 215, 10, '#D9A050', W, Hh, 0);
+      hill(g, 245, 8, '#E8B96A', W, Hh, 2);
+      emo(g, '⛺', 110, 222, 52); emo(g, '⛺', 175, 236, 36);
+      emo(g, '👴', 245, 248, 40); emo(g, '👵', 285, 254, 30);
+      emo(g, '🐪', 345, 248, 42); emo(g, '🐪', 400, 256, 34); emo(g, '🐪', 448, 262, 28);
+      emo(g, '🐏', 470, 208, 26); emo(g, '🐑', 60, 278, 22); emo(g, '🐑', 30, 266, 18);
+    },
+    // 이삭과 야곱: 하늘까지 닿은 사다리
+    function (g, W, Hh) {
+      g.fillStyle = grad(g, 0, 240, ['#3B1A78', '#8B4FB8', '#F3A6C8', '#FFE6A3']); g.fillRect(0, 0, W, Hh);
+      const glow = g.createRadialGradient(215, 15, 5, 215, 15, 130);
+      glow.addColorStop(0, 'rgba(255,255,220,.95)'); glow.addColorStop(1, 'rgba(255,255,220,0)');
+      g.fillStyle = glow; g.fillRect(0, 0, W, 180);
+      const r = rng(99);
+      g.fillStyle = '#fff';
+      for (let i = 0; i < 40; i++) { g.globalAlpha = .3 + r() * .5; g.beginPath(); g.arc(r() * W, r() * 120, r() * 1.4 + .3, 0, Math.PI * 2); g.fill(); }
+      g.globalAlpha = 1;
+      cloud(g, 200, 22, 1.1); cloud(g, 250, 30, .9);
+      g.strokeStyle = '#FFF3B0'; g.lineWidth = 4; g.shadowColor = '#FFF7C2'; g.shadowBlur = 10;
+      g.beginPath(); g.moveTo(178, 258); g.lineTo(204, 28); g.moveTo(232, 258); g.lineTo(230, 28); g.stroke();
+      g.lineWidth = 3;
+      for (let y = 40; y < 255; y += 18) {
+        const t = (y - 28) / 230;
+        g.beginPath(); g.moveTo(204 - 26 * t, y); g.lineTo(230 + 2 * t, y); g.stroke();
+      }
+      g.shadowBlur = 0;
+      emo(g, '👼', 236, 78, 26); emo(g, '👼', 186, 150, 24); emo(g, '👼', 240, 205, 22);
+      hill(g, 240, 9, '#5B8C1E', W, Hh, 1);
+      hill(g, 262, 6, '#78A82B', W, Hh, 3);
+      g.fillStyle = '#8E8E8E'; g.beginPath(); g.ellipse(112, 270, 22, 11, 0, 0, Math.PI * 2); g.fill();
+      emo(g, '😴', 140, 262, 30); emo(g, '💤', 168, 240, 18);
+      emo(g, '🐑', 300, 262, 28); emo(g, '🐑', 342, 272, 24); emo(g, '🐑', 375, 258, 20); emo(g, '🐐', 270, 282, 20);
+      emo(g, '🍲', 45, 272, 24); emo(g, '⛲', 365, 215, 26);
+    },
+    // 요셉: 이집트의 피라미드와 나일강
+    function (g, W, Hh) {
+      g.fillStyle = grad(g, 0, 230, ['#FFD27A', '#FFE7A8', '#FFF4D6']); g.fillRect(0, 0, W, Hh);
+      const sun = g.createRadialGradient(420, 60, 5, 420, 60, 70);
+      sun.addColorStop(0, '#FFFBE0'); sun.addColorStop(.4, '#FFE27A'); sun.addColorStop(1, 'rgba(255,226,122,0)');
+      g.fillStyle = sun; g.fillRect(330, 0, 170, 140);
+      poly(g, [[260, 222], [345, 100], [430, 222]], '#D6A75C');
+      poly(g, [[345, 100], [430, 222], [372, 222]], '#B98A43');
+      poly(g, [[380, 222], [440, 140], [500, 222]], '#DDB06A');
+      poly(g, [[440, 140], [500, 222], [462, 222]], '#C0924C');
+      g.fillStyle = '#F4E3C1'; g.fillRect(105, 150, 120, 72);
+      g.fillStyle = '#E2CDA0'; for (let x = 112; x < 225; x += 22) g.fillRect(x, 160, 10, 62);
+      poly(g, [[98, 152], [165, 122], [232, 152]], '#C9A86A');
+      emo(g, '🌴', 80, 190, 36); emo(g, '🌴', 245, 196, 30);
+      g.fillStyle = '#EBC383'; g.fillRect(0, 220, W, 80);
+      g.fillStyle = grad(g, 248, 280, ['#38BDF8', '#0E7490']);
+      g.beginPath(); g.moveTo(0, 252);
+      for (let x = 0; x <= W; x += 10) g.lineTo(x, 252 + Math.sin(x / 50) * 5);
+      for (let x = W; x >= 0; x -= 10) g.lineTo(x, 276 + Math.sin(x / 50 + 1) * 5);
+      g.closePath(); g.fill();
+      emo(g, '🤴', 300, 232, 40); emo(g, '🧥', 340, 238, 26);
+      emo(g, '🐄', 175, 240, 30); emo(g, '🐄', 215, 238, 24);
+      emo(g, '🐪', 455, 238, 32); emo(g, '⛵', 400, 262, 22);
+      for (let x = 20; x < 170; x += 22) emo(g, '🌾', x, 290, 22);
+      emo(g, '🌾', 250, 292, 20); emo(g, '🌾', 470, 292, 20);
+    }
+  ];
 
   // ---------- 화면 ----------
   const $ = id => document.getElementById(id);
@@ -386,6 +508,12 @@
     st.g = makePiece(cellOfChapter(p, ch), ch);
     st.g.setAttribute('class', 'pc float');
     st.g.setAttribute('filter', 'url(#pzSh)');
+    // 조각에 장 번호 표 (제자리에 들어가면 없어진다)
+    const badge = el('g', { class: 'badge' });
+    badge.appendChild(el('circle', { cx: x + 50, cy: y + 50, r: 19, fill: p.ink, stroke: '#fff', 'stroke-width': 3 }));
+    const bt = el('text', { x: x + 50, y: y + 51, class: 'badge-num' }); bt.textContent = ch;
+    badge.appendChild(bt);
+    st.g.appendChild(badge);
     layers.float.appendChild(st.g);
     st.busy = true;
     tween(350, k => { st.s = .3 + .7 * k; setT(); }, () => { st.busy = false; });
@@ -409,6 +537,7 @@
       st.placed.add(ch);
       ['pzSlot', 'pzNum'].forEach(k => { const e = $(k + ch); if (e) e.remove(); });
       g.removeAttribute('filter'); g.removeAttribute('transform');
+      g.querySelectorAll('.badge').forEach(b => b.remove());
       g.setAttribute('class', 'pc fixed');
       layers.placed.appendChild(g);
       const fl = el('path', { d: paths[idx], class: 'flash' });
