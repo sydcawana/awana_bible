@@ -1,0 +1,407 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>어통조아 스티커판 (시범)</title>
+<link rel="icon" href="icons/icon-192.png">
+<style>
+  :root { --blue:#1D3557; --yellow:#FFB703; --green:#68C496; --bg:#F4F7F6; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:#333;
+    font-family:'Pretendard',-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Malgun Gothic",sans-serif; }
+  .wrap { max-width:520px; margin:0 auto; padding:16px; }
+  .top { background:var(--blue); color:#fff; border-radius:16px; padding:16px 18px; margin-bottom:12px; }
+  .top h1 { font-size:20px; margin:0 0 6px; }
+  .top p { margin:0; font-size:13px; opacity:.88; line-height:1.55; }
+  .card { background:#fff; border-radius:16px; padding:14px; box-shadow:0 2px 8px rgba(0,0,0,.05); margin-bottom:12px; }
+  .card h2 { font-size:15px; margin:0 0 10px; color:var(--blue); display:flex; justify-content:space-between; }
+  .ch-grid { display:grid; grid-template-columns:repeat(6,1fr); gap:7px; }
+  .ch { border:1.5px solid #dee2e6; background:#fff; border-radius:12px; height:42px; font-size:15px;
+    font-weight:700; color:#495057; cursor:pointer; position:relative; }
+  .ch.read { background:var(--green); border-color:var(--green); color:#fff; }
+  .ch.wait::after { content:'⭐'; position:absolute; right:-4px; top:-8px; font-size:13px; }
+  .bar { display:flex; gap:8px; flex-wrap:wrap; }
+  .btn { border:0; border-radius:12px; padding:10px 13px; font-size:14px; font-weight:700; cursor:pointer; background:#e9ecef; color:#333; }
+  .btn.primary { background:var(--blue); color:#fff; }
+  .btn.yellow { background:var(--yellow); color:var(--blue); }
+  .btn:disabled { opacity:.4; cursor:default; }
+  .note { font-size:12px; color:#6c757d; line-height:1.5; margin:8px 0 0; }
+  .toast { position:fixed; left:50%; bottom:24px; transform:translateX(-50%) translateY(20px); opacity:0;
+    background:rgba(29,53,87,.95); color:#fff; padding:10px 16px; border-radius:12px; font-size:14px;
+    transition:.25s; pointer-events:none; z-index:2000; max-width:90vw; text-align:center; }
+  .toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+
+  .sk-ov { position:fixed; inset:0; background:rgba(29,53,87,.62); display:none; align-items:center; justify-content:center; z-index:1000; padding:12px; }
+  .sk-ov.show { display:flex; }
+  .sk-panel { background:#fff; border-radius:20px; width:100%; max-width:460px; padding:12px 12px 14px;
+    box-shadow:0 10px 40px rgba(0,0,0,.3); position:relative; overflow:hidden; animation:skIn .25s ease-out; }
+  @keyframes skIn { from { transform:scale(.92); opacity:0; } to { transform:none; opacity:1; } }
+  .sk-head { display:flex; align-items:center; gap:8px; margin-bottom:8px; }
+  .sk-title { flex:1; line-height:1.2; }
+  .sk-title b { display:block; font-size:16px; color:var(--blue); }
+  .sk-title small { font-size:12px; color:#6c757d; }
+  .sk-count { font-weight:800; color:#fff; background:var(--blue); border-radius:999px; padding:3px 10px; font-size:13px; }
+  .sk-x { border:0; background:#f1f3f5; width:34px; height:34px; border-radius:50%; font-size:17px; cursor:pointer; }
+  .sk-msg { font-size:14px; line-height:1.4; background:#FFF8E1; border-radius:12px; padding:6px 10px; margin-bottom:8px;
+    height:58px; display:flex; align-items:center; justify-content:center; text-align:center; overflow:hidden; }
+  .sk-stage { display:flex; justify-content:center; }
+  .sk-svg { display:block; touch-action:none; user-select:none; -webkit-user-select:none; }
+  .sk-tools { display:flex; gap:8px; justify-content:center; margin-top:8px; }
+
+  .spot-ring { fill:rgba(255,255,255,.35); stroke:#fff; stroke-width:2; stroke-dasharray:6 5; }
+  .spot.hint .spot-ring { animation:skPulse 1s ease-in-out infinite; }
+  @keyframes skPulse { 0%,100% { fill:rgba(255,255,255,.35); stroke:#fff; } 50% { fill:rgba(255,232,163,.9); stroke:#FFB703; } }
+  .spot-num { fill:#fff; font-size:16px; font-weight:800; text-anchor:middle; dominant-baseline:central;
+    paint-order:stroke; stroke:rgba(29,53,87,.55); stroke-width:3px; pointer-events:none; }
+  .emoji { text-anchor:middle; dominant-baseline:central; pointer-events:none;
+    font-family:"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif; }
+  .bubble-text { font-size:11px; font-weight:800; fill:#1D3557; text-anchor:middle; dominant-baseline:central; pointer-events:none; }
+  .tray { fill:#FFF8E1; stroke:#FFE08A; stroke-width:2; stroke-dasharray:6 5; }
+  .tray-label { fill:#D9A400; font-size:14px; font-weight:700; pointer-events:none; }
+  .stk { cursor:pointer; }
+  .stk.float { cursor:grab; }
+  .confetti { position:absolute; top:-30px; font-size:22px; pointer-events:none; animation:skFall linear forwards; }
+  @keyframes skFall { to { transform:translateY(110vh) rotate(540deg); } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <h1>⭐ 창조와 노아 스티커판 (시범)</h1>
+    <p>장 번호를 누르면 '읽음'이 되고 그 장의 스티커가 한 장 생겨요.<br>
+      그림자 자리를 찾아 붙이면 성경 인물들의 한마디가 나와요.<br>
+      ※ 시범용이라 진짜 통독 기록에는 저장되지 않아요. 스티커 그림은 임시(이모지)예요.</p>
+  </div>
+
+  <div class="card">
+    <h2><span>🌍 창세기 1–11장</span><span id="prog"></span></h2>
+    <div class="ch-grid" id="grid"></div>
+  </div>
+
+  <div class="card">
+    <div class="bar">
+      <button class="btn primary" id="bOpen">⭐ 스티커판 보기</button>
+      <button class="btn" id="bMany">📖 4장 한꺼번에 읽기</button>
+      <button class="btn" id="bReset">↺ 처음부터</button>
+    </div>
+    <p class="note">· 붙인 스티커를 누르면 대사를 다시 볼 수 있어요.<br>
+      · 읽은 장을 다시 누르면 읽음이 취소되고 스티커도 떨어져요.</p>
+  </div>
+</div>
+
+<div class="sk-ov" id="skOv" aria-hidden="true">
+  <div class="sk-panel" id="skPanel">
+    <div class="sk-head">
+      <div class="sk-title"><b>🌍 창조와 노아</b><small>창세기 1–11장 스티커판</small></div>
+      <span class="sk-count" id="skCount"></span>
+      <button class="sk-x" id="skClose" aria-label="닫기">✕</button>
+    </div>
+    <div class="sk-msg" id="skMsg"></div>
+    <div class="sk-stage" id="skStage"></div>
+    <div class="sk-tools">
+      <button class="btn" id="skHint">💡 힌트</button>
+      <button class="btn yellow" id="skAuto">✨ 자동으로 붙이기</button>
+    </div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+(function () {
+  // ------------------------------------------------------------
+  // 스티커 (임시 그림: 이모지). x,y = 판 위 자리, side = 말풍선 방향
+  //   say: 스티커 말풍선(짧게), talk: 붙였을 때 나오는 대화
+  // ------------------------------------------------------------
+  const STICKERS = {
+    1:  { e:['☀️','🌙'], bg:'#FFF3BF', x:290, y:62,  side:-1, say:'출근!',       talk:'해: "첫 출근이다! 낮은 내가 맡을게"<br>달: "그럼 난 야간 근무~ 🌙" <small>(1장)</small>' },
+    2:  { e:['🧔','🦛'], bg:'#D3F9D8', x:62,  y:398, side:1,  say:'너는…하마!',  talk:'아담: "너는 하마! 너는 기린! 너는…"<br>동물들: "언제 끝나요? 줄이 길어요~" <small>(2장)</small>' },
+    3:  { e:['🐍','🍎'], bg:'#E6FCF5', x:178, y:398, side:1,  say:'뱀이…',       talk:'아담: "누가 먹자고 했어?" 하와: "뱀이…"<br>뱀: "😅 (슬금슬금)" <small>(3장)</small>' },
+    4:  { e:['🐑','🔥'], bg:'#FFE8CC', x:292, y:398, side:-1, say:'첫 새끼 양',  talk:'아벨은 가장 좋은 첫 새끼 양을 드렸어요.<br>하나님은 드리는 사람의 마음을 보세요. <small>(4장)</small>' },
+    5:  { e:['👴','🎂'], bg:'#FFDEEB', x:62,  y:190, side:1,  say:'초 969개!',   talk:'므두셀라: "생일 초가 969개…<br>불 끄다 숨차겠다! 🎂" <small>(5장)</small>' },
+    6:  { e:['🧔','🔨'], bg:'#F1E4D3', x:92,  y:292, side:1,  say:'곧 알게 돼~', talk:'이웃: "노아 아저씨, 맑은 날 웬 배예요?"<br>노아: "곧 알게 될 거야~ 🔨" <small>(6장)</small>' },
+    7:  { e:['🦒'],      bg:'#FFF0D9', x:190, y:214, side:1,  say:'목이…!',      talk:'기린: "방주 천장 좀 높여 주세요…<br>목이 꺾여요!" 🦒 <small>(7장)</small>' },
+    8:  { e:['🕊️','🌿'], bg:'#E7F5FF', x:70,  y:72,  side:1,  say:'배달 왔어요', talk:'비둘기: "올리브잎 배달 왔습니다~<br>땅이 말랐어요!" 🕊️ <small>(8장)</small>' },
+    9:  { e:['🌈'],      bg:'#F3F0FF', x:180, y:112, side:1,  say:'약속!',       talk:'무지개: "다시는 물로 세상을 덮지 않겠다는<br>하나님의 약속이야!" 🌈 <small>(9장)</small>' },
+    10: { e:['👨‍👩‍👦','📜'], bg:'#FFF9DB', x:290, y:292, side:-1, say:'이름이 많아', talk:'아이: "셈, 함, 야벳… 그리고 그 아들들…<br>이름이 너무 많아요!" 📜 <small>(10장)</small>' },
+    11: { e:['🧱','🍌'], bg:'#FFE3E3', x:300, y:176, side:-1, say:'바나나요?',   talk:'"벽돌 줘!" "뭐라고?" "벽돌!!"<br>"…바나나요?" 🧱🍌 <small>(11장 바벨탑)</small>' }
+  };
+  const CHAPTERS = Object.keys(STICKERS).map(Number);
+  const W = 360, H = 480, TRAY = 140, R = 42, SNAP = 40;
+  const NS = 'http://www.w3.org/2000/svg';
+  const $ = id => document.getElementById(id);
+
+  // ---------- 배경 장면 (임시) ----------
+  function drawScene() {
+    const S = 3, cv = document.createElement('canvas');
+    cv.width = W * S; cv.height = H * S;
+    const g = cv.getContext('2d'); g.scale(S, S);
+    const lin = (y0, y1, cs) => { const gr = g.createLinearGradient(0, y0, 0, y1); cs.forEach((c, i) => gr.addColorStop(i / (cs.length - 1), c)); return gr; };
+    g.fillStyle = lin(0, 260, ['#6FB6FF', '#BFE3FF', '#EAF6FF']); g.fillRect(0, 0, W, H);
+    const sun = g.createRadialGradient(300, 50, 5, 300, 50, 90);
+    sun.addColorStop(0, 'rgba(255,246,168,1)'); sun.addColorStop(1, 'rgba(255,216,77,0)');
+    g.fillStyle = sun; g.fillRect(180, 0, 180, 160);
+    ['#FF6B6B', '#FFA94D', '#FFE066', '#69DB7C', '#4DABF7', '#9775FA'].forEach((c, i) => {
+      g.beginPath(); g.arc(180, 270, 200 - i * 10, Math.PI, 0); g.lineWidth = 10; g.strokeStyle = c; g.globalAlpha = .45; g.stroke();
+    });
+    g.globalAlpha = 1;
+    const cloud = (x, y, s) => { g.fillStyle = 'rgba(255,255,255,.9)'; [[0,0,22],[20,-8,18],[38,2,16],[-18,4,14]].forEach(([dx,dy,r]) => { g.beginPath(); g.arc(x+dx*s, y+dy*s, r*s, 0, Math.PI*2); g.fill(); }); };
+    cloud(150, 30, .9); cloud(250, 130, .7); cloud(30, 140, .6);
+    g.beginPath(); g.moveTo(230, 255); g.lineTo(320, 150); g.lineTo(400, 255); g.closePath(); g.fillStyle = '#7C8B6A'; g.fill();
+    g.fillStyle = lin(240, 345, ['#3B82F6', '#1E40AF']); g.fillRect(0, 240, W, 105);
+    g.strokeStyle = 'rgba(255,255,255,.45)'; g.lineWidth = 2;
+    for (let r = 0; r < 5; r++) { g.beginPath(); for (let x = 0; x <= W; x += 8) g.lineTo(x, 255 + r * 18 + Math.sin(x / 14 + r) * 3); g.stroke(); }
+    // 방주
+    g.beginPath(); g.moveTo(120, 236); g.lineTo(250, 236); g.lineTo(235, 268); g.lineTo(135, 268); g.closePath(); g.fillStyle = '#8B5A2B'; g.fill();
+    g.fillStyle = '#B07A45'; g.fillRect(145, 214, 80, 22);
+    g.beginPath(); g.moveTo(138, 216); g.lineTo(185, 198); g.lineTo(232, 216); g.closePath(); g.fillStyle = '#7A3E1D'; g.fill();
+    // 땅 (홍수 뒤 새 땅 / 에덴)
+    g.fillStyle = lin(340, 480, ['#8CCB5E', '#5E9E35']);
+    g.beginPath(); g.moveTo(0, H); g.lineTo(0, 350);
+    for (let x = 0; x <= W; x += 10) g.lineTo(x, 345 + Math.sin(x / 40) * 6);
+    g.lineTo(W, H); g.closePath(); g.fill();
+    g.font = '14px "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
+    [[20,460],[120,465],[235,462],[340,458],[175,352],[25,355],[345,352]].forEach(([x, y]) => g.fillText('🌼', x, y));
+    return cv.toDataURL('image/png');
+  }
+
+  // ---------- 스티커 그리기 ----------
+  function el(tag, a) { const e = document.createElementNS(NS, tag); for (const k in a) e.setAttribute(k, a[k]); return e; }
+  function textW(t) { let w = 0; for (const c of t) w += /[가-힣]/.test(c) ? 11 : /\s/.test(c) ? 4 : 7; return w; }
+
+  function makeSticker(ch, silhouette) {
+    const s = STICKERS[ch], g = el('g', {});
+    if (!silhouette) g.appendChild(el('circle', { r: R, fill: '#fff', filter: 'url(#skSh)' }));
+    g.appendChild(el('circle', { r: R - 5, fill: silhouette ? '#000' : s.bg, opacity: silhouette ? 0 : 1 }));
+    const em = el('g', silhouette ? { filter: 'url(#skSil)' } : {});
+    const sizes = s.e.length === 1 ? [[0, 2, 46]] : [[-13, 4, 36], [17, 10, 26]];
+    s.e.forEach((e, i) => { const [dx, dy, fs] = sizes[i]; const t = el('text', { class: 'emoji', x: dx, y: dy, 'font-size': fs }); t.textContent = e; em.appendChild(t); });
+    g.appendChild(em);
+    if (!silhouette) {
+      const w = textW(s.say) + 14, bx = s.side > 0 ? 8 : -8 - w, by = -R - 12;
+      const b = el('g', {});
+      b.appendChild(el('rect', { x: bx, y: by, width: w, height: 22, rx: 11, fill: '#fff', stroke: '#1D3557', 'stroke-width': 1.5 }));
+      const tx = s.side > 0 ? bx + 12 : bx + w - 12;
+      b.appendChild(el('path', { d: `M${tx - 5},${by + 21} L${tx + (s.side > 0 ? -8 : 8)},${by + 31} L${tx + 5},${by + 21}`, fill: '#fff', stroke: '#1D3557', 'stroke-width': 1.5, 'stroke-linejoin': 'round' }));
+      b.appendChild(el('rect', { x: tx - 6, y: by + 18, width: 12, height: 3, fill: '#fff' }));
+      const t = el('text', { class: 'bubble-text', x: bx + w / 2, y: by + 11.5 }); t.textContent = s.say;
+      b.appendChild(t);
+      g.appendChild(b);
+    }
+    return g;
+  }
+
+  // ---------- 판 ----------
+  const st = { read: new Set(), placed: new Set(), queue: [], cur: null, g: null, x: 0, y: 0, s: 1,
+               busy: false, drag: null, hintTimer: null, onPlace: null };
+  let svg, L, vb;
+  const ov = $('skOv'), msgEl = $('skMsg');
+  const msg = h => { msgEl.innerHTML = h; };
+
+  function build() {
+    vb = [-8, -8, W + 16, H + TRAY + 8];
+    $('skStage').innerHTML = '';
+    svg = el('svg', { class: 'sk-svg', viewBox: vb.join(' ') });
+    const defs = el('defs', {});
+    const f1 = el('filter', { id: 'skSh', x: '-30%', y: '-30%', width: '160%', height: '160%' });
+    f1.appendChild(el('feDropShadow', { dx: 0, dy: 3, stdDeviation: 3, 'flood-color': '#000', 'flood-opacity': .28 }));
+    const f2 = el('filter', { id: 'skSil' });
+    f2.appendChild(el('feColorMatrix', { type: 'matrix', values: '0 0 0 0 0.11  0 0 0 0 0.21  0 0 0 0 0.34  0 0 0 0.38 0' }));
+    defs.append(f1, f2);
+    svg.appendChild(defs);
+    const clip = el('clipPath', { id: 'skBoardClip' }); clip.appendChild(el('rect', { x: 0, y: 0, width: W, height: H, rx: 14 })); defs.appendChild(clip);
+    const bg = el('image', { x: 0, y: 0, width: W, height: H, 'clip-path': 'url(#skBoardClip)', preserveAspectRatio: 'none' });
+    const art = drawScene(); bg.setAttribute('href', art); bg.setAttributeNS('http://www.w3.org/1999/xlink', 'xlink:href', art);
+    svg.appendChild(bg);
+    svg.appendChild(el('rect', { class: 'tray', x: 0, y: H + 10, width: W, height: TRAY - 12, rx: 16 }));
+    const tl = el('text', { class: 'tray-label', x: 14, y: H + 30 }); tl.textContent = '새 스티커';
+    svg.appendChild(tl);
+    L = { spots: el('g', {}), placed: el('g', {}), float: el('g', {}) };
+    svg.append(L.spots, L.placed, L.float);
+    $('skStage').appendChild(svg);
+    CHAPTERS.forEach(ch => {
+      const s = STICKERS[ch];
+      if (st.placed.has(ch)) { L.placed.appendChild(placedSticker(ch)); return; }
+      const sp = el('g', { class: 'spot', id: 'skSpot' + ch, transform: `translate(${s.x} ${s.y})` });
+      sp.appendChild(el('circle', { class: 'spot-ring', r: R }));
+      sp.appendChild(makeSticker(ch, true));
+      const n = el('text', { class: 'spot-num', x: 0, y: R - 12 }); n.textContent = ch;
+      sp.appendChild(n);
+      L.spots.appendChild(sp);
+    });
+    bind();
+    fit();
+  }
+
+  function placedSticker(ch) {
+    const s = STICKERS[ch], g = makeSticker(ch, false);
+    g.setAttribute('class', 'stk'); g.dataset.ch = ch;
+    g.setAttribute('transform', `translate(${s.x} ${s.y})`);
+    return g;
+  }
+
+  function fit() {
+    if (!svg) return;
+    const panel = $('skPanel'), stage = $('skStage');
+    const other = panel.offsetHeight - stage.offsetHeight;
+    const aw = Math.min(460, innerWidth - 24) - 24, ah = innerHeight - 24 - other, ratio = vb[2] / vb[3];
+    const w = Math.max(220, Math.min(aw, ah * ratio));
+    svg.style.width = w + 'px'; svg.style.height = (w / ratio) + 'px';
+  }
+
+  const total = CHAPTERS.length;
+  function head() {
+    $('skCount').textContent = `${st.placed.size} / ${total}`;
+    $('skHint').disabled = !st.cur; $('skAuto').disabled = !st.cur;
+    $('skAuto').textContent = st.queue.length ? `✨ 모두 붙이기 (${st.queue.length + 1})` : '✨ 자동으로 붙이기';
+  }
+  function setT() { if (st.g) st.g.setAttribute('transform', `translate(${st.x} ${st.y}) scale(${st.s})`); }
+  function tween(ms, fn, done) {
+    const t0 = performance.now();
+    (function step(t) { const raw = Math.min(1, (t - t0) / ms); fn(1 - Math.pow(1 - raw, 3)); if (raw < 1) requestAnimationFrame(step); else if (done) done(); })(t0);
+  }
+  function clearHint() { clearTimeout(st.hintTimer); svg && svg.querySelectorAll('.spot.hint').forEach(e => e.classList.remove('hint')); }
+  function hint() { const e = st.cur && $('skSpot' + st.cur); if (e) e.classList.add('hint'); }
+
+  function next() {
+    clearHint(); L.float.innerHTML = ''; st.g = null;
+    st.cur = st.queue.shift() || null; head();
+    if (!st.cur) {
+      msg(st.placed.size === total ? '🎉 <b>창조와 노아</b> 스티커판 완성!' : '붙인 스티커를 누르면 대사를 다시 볼 수 있어요');
+      return;
+    }
+    const ch = st.cur;
+    st.g = makeSticker(ch, false); st.g.setAttribute('class', 'stk float');
+    const badge = el('g', { transform: `translate(${R - 6} ${R - 6})` });
+    badge.appendChild(el('circle', { r: 14, fill: '#1D3557', stroke: '#fff', 'stroke-width': 2.5 }));
+    const bt = el('text', { class: 'spot-num', x: 0, y: 1, style: 'stroke:none;font-size:14px' }); bt.textContent = ch;
+    badge.appendChild(bt); badge.setAttribute('class', 'badge');
+    st.g.appendChild(badge);
+    L.float.appendChild(st.g);
+    st.x = W / 2; st.y = H + 10 + (TRAY - 12) / 2 + 10;
+    st.busy = true;
+    tween(350, k => { st.s = .3 + .8 * k; setT(); }, () => { st.busy = false; });
+    msg(`⭐ <b>${ch}장</b> 스티커가 생겼어요!<br><small>그림자 자리(${ch}번)를 찾아 붙여 보세요</small>`);
+    st.hintTimer = setTimeout(hint, 7000);
+  }
+
+  function place(ms, then) {
+    const ch = st.cur, s = STICKERS[ch], g = st.g, x0 = st.x, y0 = st.y, s0 = st.s;
+    st.busy = true; clearHint();
+    tween(ms, k => { st.x = x0 + (s.x - x0) * k; st.y = y0 + (s.y - y0) * k; st.s = s0 + (1.2 - s0) * k; setT(); }, () => {
+      g.querySelectorAll('.badge').forEach(b => b.remove());
+      tween(220, k => { st.s = 1.2 - .2 * k; setT(); }, () => {
+        g.setAttribute('class', 'stk'); g.dataset.ch = ch;
+        L.placed.appendChild(g);
+        const sp = $('skSpot' + ch); if (sp) sp.remove();
+        st.placed.add(ch); st.g = null; st.cur = null; st.busy = false;
+        try { navigator.vibrate && navigator.vibrate(30); } catch (e) {}
+        if (st.onPlace) st.onPlace(ch);
+        head();
+        msg(STICKERS[ch].talk);
+        if (st.placed.size === total) { setTimeout(() => { msg('🎉 <b>창조와 노아</b> 스티커판 완성! 11장을 다 읽었어요 👏'); confetti(); }, 1600); return; }
+        if (then) then();
+        else setTimeout(() => { if (!st.cur && st.queue.length) next(); }, 1800);
+      });
+    });
+  }
+
+  function pt(e) { const p = svg.createSVGPoint(); p.x = e.clientX; p.y = e.clientY; return p.matrixTransform(svg.getScreenCTM().inverse()); }
+  function bind() {
+    svg.addEventListener('pointerdown', e => {
+      const placed = e.target.closest && e.target.closest('.stk:not(.float)');
+      if (placed && placed.dataset.ch) { msg(STICKERS[placed.dataset.ch].talk); return; }
+      if (st.busy || !st.g || !e.target.closest('.stk.float')) return;
+      e.preventDefault();
+      const p = pt(e);
+      st.drag = { id: e.pointerId, px: p.x, py: p.y, x: st.x, y: st.y };
+      try { svg.setPointerCapture(e.pointerId); } catch (err) {}
+      st.s = 1.1; setT(); clearTimeout(st.hintTimer);
+    });
+    svg.addEventListener('pointermove', e => {
+      if (!st.drag || e.pointerId !== st.drag.id) return;
+      const p = pt(e);
+      st.x = Math.max(vb[0] + 20, Math.min(vb[0] + vb[2] - 20, st.drag.x + p.x - st.drag.px));
+      st.y = Math.max(vb[1] + 20, Math.min(vb[1] + vb[3] - 20, st.drag.y + p.y - st.drag.py));
+      setT();
+    });
+    const end = e => {
+      if (!st.drag || e.pointerId !== st.drag.id) return;
+      st.drag = null;
+      const s = STICKERS[st.cur];
+      if (Math.hypot(st.x - s.x, st.y - s.y) < SNAP) { place(150); return; }
+      st.s = 1; setT();
+      st.hintTimer = setTimeout(hint, 5000);
+    };
+    svg.addEventListener('pointerup', end);
+    svg.addEventListener('pointercancel', end);
+  }
+
+  function autoAll() {
+    if (!st.cur || st.busy) return;
+    place(500, () => { if (st.queue.length) setTimeout(() => { next(); setTimeout(autoAll, 380); }, 900); });
+  }
+  function confetti() {
+    const p = $('skPanel'), items = ['🎉', '✨', '⭐', '🌈', '💛', '🎊'];
+    for (let i = 0; i < 28; i++) {
+      const s = document.createElement('span'); s.className = 'confetti'; s.textContent = items[i % items.length];
+      s.style.left = Math.random() * 100 + '%'; s.style.animationDuration = (1.6 + Math.random() * 1.4) + 's';
+      s.style.animationDelay = (Math.random() * .4) + 's'; p.appendChild(s); setTimeout(() => s.remove(), 3600);
+    }
+  }
+
+  function open(o) {
+    st.read = new Set(o.read); st.placed = new Set([...o.placed].filter(c => st.read.has(c)));
+    st.onPlace = o.onPlace; st.cur = null; st.g = null; st.drag = null;
+    st.queue = CHAPTERS.filter(c => st.read.has(c) && !st.placed.has(c));
+    if (o.focus && st.queue.indexOf(o.focus) > 0) { st.queue.splice(st.queue.indexOf(o.focus), 1); st.queue.unshift(o.focus); }
+    ov.classList.add('show'); ov.setAttribute('aria-hidden', 'false');
+    build(); next();
+  }
+  function close() { clearHint(); ov.classList.remove('show'); ov.setAttribute('aria-hidden', 'true'); }
+  $('skClose').onclick = close;
+  $('skHint').onclick = hint;
+  $('skAuto').onclick = () => { if (st.queue.length) autoAll(); else if (st.cur && !st.busy) place(500); };
+  addEventListener('resize', fit);
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && ov.classList.contains('show')) close(); });
+
+  // ---------- 시범 화면 ----------
+  const LS_R = 'skDemoRead', LS_P = 'skDemoPlaced';
+  const load = k => { try { return new Set(JSON.parse(localStorage.getItem(k) || '[]')); } catch (e) { return new Set(); } };
+  const save = (k, s) => { try { localStorage.setItem(k, JSON.stringify([...s])); } catch (e) {} };
+  let read = load(LS_R), placed = load(LS_P);
+  let tt;
+  const toast = t => { const e = $('toast'); e.textContent = t; e.classList.add('show'); clearTimeout(tt); tt = setTimeout(() => e.classList.remove('show'), 2200); };
+
+  function render() {
+    const grid = $('grid'); grid.innerHTML = '';
+    CHAPTERS.forEach(c => {
+      const b = document.createElement('button');
+      b.className = 'ch' + (read.has(c) ? ' read' : '') + (read.has(c) && !placed.has(c) ? ' wait' : '');
+      b.textContent = c; b.onclick = () => onCh(c); grid.appendChild(b);
+    });
+    $('prog').textContent = `⭐ ${CHAPTERS.filter(c => placed.has(c)).length} / ${total}`;
+  }
+  const openBoard = focus => open({ read, placed, focus, onPlace(c) { placed.add(c); save(LS_P, placed); render(); } });
+  function onCh(c) {
+    if (read.has(c)) { read.delete(c); placed.delete(c); save(LS_R, read); save(LS_P, placed); render(); toast(`${c}장 읽음을 취소했어요 (스티커도 떨어졌어요)`); return; }
+    read.add(c); save(LS_R, read); render(); openBoard(c);
+  }
+  $('bOpen').onclick = () => openBoard(null);
+  $('bMany').onclick = () => {
+    const add = CHAPTERS.filter(c => !read.has(c)).slice(0, 4);
+    if (!add.length) { toast('이미 다 읽었어요!'); return; }
+    add.forEach(c => read.add(c)); save(LS_R, read); render(); openBoard(add[0]);
+  };
+  let armed = false, at;
+  $('bReset').onclick = () => {
+    if (!armed) { armed = true; $('bReset').textContent = '정말 지울까요? 한 번 더'; at = setTimeout(() => { armed = false; $('bReset').textContent = '↺ 처음부터'; }, 3000); return; }
+    clearTimeout(at); armed = false; $('bReset').textContent = '↺ 처음부터';
+    read = new Set(); placed = new Set(); save(LS_R, read); save(LS_P, placed); render(); toast('처음 상태로 돌렸어요');
+  };
+  render();
+})();
+</script>
+</body>
+</html>
