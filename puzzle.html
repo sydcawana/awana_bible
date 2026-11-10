@@ -1,0 +1,616 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>어통조아 퍼즐 (시범)</title>
+<link rel="icon" href="icons/icon-192.png">
+<style>
+  :root { --blue:#1D3557; --yellow:#FFB703; --green:#68C496; --bg:#F4F7F6; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:#333;
+    font-family:'Pretendard',-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Malgun Gothic",sans-serif; }
+  .wrap { max-width:520px; margin:0 auto; padding:16px; }
+  .top { background:var(--blue); color:#fff; border-radius:16px; padding:16px 18px; margin-bottom:12px; }
+  .top h1 { font-size:20px; margin:0 0 6px; }
+  .top p { margin:0; font-size:13px; opacity:.88; line-height:1.55; }
+  .card { background:#fff; border-radius:16px; padding:14px; box-shadow:0 2px 8px rgba(0,0,0,.05); margin-bottom:12px; }
+  .card h2 { font-size:15px; margin:0 0 10px; color:var(--blue); }
+  .sec { margin-bottom:12px; }
+  .sec-title { font-size:13px; font-weight:800; margin:0 0 6px; display:flex; justify-content:space-between; }
+  .ch-grid { display:grid; grid-template-columns:repeat(5,1fr); gap:7px; }
+  .ch { border:1.5px solid #dee2e6; background:#fff; border-radius:12px; height:42px; font-size:15px;
+    font-weight:700; color:#495057; cursor:pointer; position:relative; }
+  .ch.read { background:var(--green); border-color:var(--green); color:#fff; }
+  .ch.wait::after { content:'🧩'; position:absolute; right:-4px; top:-8px; font-size:13px; }
+  .bar { display:flex; gap:8px; flex-wrap:wrap; }
+  .btn { border:0; border-radius:12px; padding:10px 13px; font-size:14px; font-weight:700; cursor:pointer;
+    background:#e9ecef; color:#333; }
+  .btn.primary { background:var(--blue); color:#fff; }
+  .btn.yellow { background:var(--yellow); color:var(--blue); }
+  .btn:disabled { opacity:.4; cursor:default; }
+  .note { font-size:12px; color:#6c757d; line-height:1.5; margin:8px 0 0; }
+  .toast { position:fixed; left:50%; bottom:24px; transform:translateX(-50%) translateY(20px); opacity:0;
+    background:rgba(29,53,87,.95); color:#fff; padding:10px 16px; border-radius:12px; font-size:14px;
+    transition:.25s; pointer-events:none; z-index:2000; max-width:90vw; text-align:center; }
+  .toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+
+  /* ---------- 퍼즐 오버레이 ---------- */
+  .pz-ov { position:fixed; inset:0; background:rgba(29,53,87,.62); display:none; align-items:center;
+    justify-content:center; z-index:1000; padding:12px; }
+  .pz-ov.show { display:flex; }
+  .pz-panel { background:#fff; border-radius:20px; width:100%; max-width:560px; padding:12px 12px 14px;
+    box-shadow:0 10px 40px rgba(0,0,0,.3); position:relative; overflow:hidden; animation:pzIn .25s ease-out; }
+  @keyframes pzIn { from { transform:scale(.92); opacity:0; } to { transform:none; opacity:1; } }
+  .pz-head { display:flex; align-items:center; gap:6px; margin-bottom:8px; }
+  .pz-nav { border:0; background:#f1f3f5; width:34px; height:34px; border-radius:50%; font-size:15px; cursor:pointer; flex:none; }
+  .pz-nav:disabled { opacity:.3; cursor:default; }
+  .pz-title { flex:1; text-align:center; line-height:1.2; }
+  .pz-title b { display:block; font-size:16px; color:var(--blue); }
+  .pz-title small { font-size:12px; color:#6c757d; }
+  .pz-count { font-weight:800; color:#fff; background:var(--blue); border-radius:999px; padding:3px 10px; font-size:13px; flex:none; }
+  .pz-x { border:0; background:#f1f3f5; width:34px; height:34px; border-radius:50%; font-size:17px; cursor:pointer; flex:none; }
+  .pz-msg { font-size:14px; line-height:1.45; background:#FFF8E1; border-radius:12px; padding:7px 10px;
+    margin-bottom:8px; height:50px; display:flex; align-items:center; justify-content:center; text-align:center; overflow:hidden; }
+  .pz-stage { display:flex; justify-content:center; }
+  .pz-svg { display:block; touch-action:none; user-select:none; -webkit-user-select:none; }
+  .pz-tools { display:flex; gap:8px; justify-content:center; margin-top:8px; flex-wrap:wrap; }
+
+  .slot { fill:#F1F5F9; stroke:#94A3B8; stroke-width:1.5; stroke-dasharray:5 4; }
+  .slot.hint { animation:pzPulse 1s ease-in-out infinite; }
+  @keyframes pzPulse { 0%,100% { fill:#F1F5F9; stroke:#94A3B8; } 50% { fill:#FFE8A3; stroke:#FFB703; } }
+  .slot-num { fill:#A0AEC0; font-size:28px; font-weight:700; text-anchor:middle; dominant-baseline:central; pointer-events:none; }
+  .tray { fill:#FFF8E1; stroke:#FFE08A; stroke-width:2; stroke-dasharray:6 5; }
+  .tray-label { fill:#D9A400; font-size:15px; font-weight:700; pointer-events:none; }
+  .edge { fill:none; stroke:rgba(0,0,0,.2); stroke-width:1; transition:stroke .8s; }
+  .pc.float { cursor:grab; }
+  .pc.float .edge { stroke:#FFB703; stroke-width:3; }
+  .pc.fixed { cursor:pointer; }
+  .done .edge { stroke:transparent; }
+  .flash { fill:#fff; pointer-events:none; animation:pzFlash .6s ease-out forwards; }
+  @keyframes pzFlash { from { opacity:.85; } to { opacity:0; } }
+
+  .confetti { position:absolute; top:-30px; font-size:22px; pointer-events:none; animation:pzFall linear forwards; }
+  @keyframes pzFall { to { transform:translateY(110vh) rotate(540deg); } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <h1>🧩 창세기 퍼즐 (시범판)</h1>
+    <p>장 번호를 누르면 '읽음'이 되고 퍼즐 조각이 하나 생겨요. 조각을 끌어다 제자리에 끼워 보세요.<br>
+      창세기는 이야기 묶음 4개, 퍼즐 4개로 되어 있어요.<br>
+      ※ 시범용 화면이라 진짜 통독 기록에는 저장되지 않아요.</p>
+  </div>
+
+  <div class="card" id="secList"></div>
+
+  <div class="card">
+    <h2>시험해 보기</h2>
+    <div class="bar">
+      <button class="btn primary" id="bOpen">🧩 퍼즐판 보기</button>
+      <button class="btn" id="bMany">📖 5장 한꺼번에 읽기</button>
+      <button class="btn" id="bPast">📚 '이전' 기록 10장 넣기</button>
+      <button class="btn" id="bReset">↺ 처음부터</button>
+    </div>
+    <p class="note">· '이전' 기록(관리자가 넣은 지난 기록)은 처음부터 맞춰진 조각으로 보여요.<br>
+      · 읽은 장을 다시 누르면 읽음이 취소되고 조각도 빠져요.<br>
+      · 그림은 임시 그림이에요. 나중에 진짜 그림으로 바꿀 수 있어요.</p>
+  </div>
+</div>
+
+<div class="pz-ov" id="pzOv" aria-hidden="true">
+  <div class="pz-panel" id="pzPanel">
+    <div class="pz-head">
+      <button class="pz-nav" id="pzPrev" aria-label="이전 퍼즐">◀</button>
+      <div class="pz-title"><b id="pzName"></b><small id="pzRange"></small></div>
+      <button class="pz-nav" id="pzNext" aria-label="다음 퍼즐">▶</button>
+      <span class="pz-count" id="pzCount"></span>
+      <button class="pz-x" id="pzClose" aria-label="닫기">✕</button>
+    </div>
+    <div class="pz-msg" id="pzMsg"></div>
+    <div class="pz-stage" id="pzStage"></div>
+    <div class="pz-tools">
+      <button class="btn" id="pzHint">💡 힌트</button>
+      <button class="btn yellow" id="pzAuto">✨ 자동으로 맞추기</button>
+    </div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+// ============================================================
+// 퍼즐 엔진 (BiblePuzzle) — 나중에 어통조아 본 화면(index.html)에 그대로 옮겨 쓸 부분
+//   한 장 읽기 = 조각 하나. 맞춘 조각은 따로 저장하지 않아도 되도록,
+//   '읽은 장'과 '맞춘 장' 두 목록만 받는다. (읽었지만 아직 안 맞춘 장 = 새 조각)
+// ============================================================
+(function () {
+  const BOOK = '창세기';
+  // 장면: [그림, 짧은 설명]  (임시 그림: 이모지)
+  const SCENES = {
+    1:['☀️','빛이 있으라!'], 2:['🌳','에덴동산'], 3:['🐍','뱀과 열매'], 4:['👬','가인과 아벨'],
+    5:['🎂','969살 므두셀라'], 6:['🔨','방주를 지어요'], 7:['🌧️','40일 동안 비'], 8:['🕊️','비둘기와 올리브잎'],
+    9:['🌈','무지개 약속'], 10:['🗺️','노아의 자손들'], 11:['🗼','바벨탑 "뭐라고?"'],
+    12:['🐪','떠나라, 아브람'], 13:['⛺','롯과 헤어져요'], 14:['⚔️','롯을 구해요'], 15:['⭐','하늘의 별처럼'],
+    16:['💧','하갈과 우물'], 17:['✍️','새 이름 아브라함'], 18:['😆','사라가 웃어요'], 19:['🧂','소금 기둥'],
+    20:['👑','아비멜렉 왕'], 21:['👶','이삭이 태어나요'], 22:['🐏','숫양을 준비하심'], 23:['⛰️','막벨라 굴'],
+    24:['🐫','낙타 물 주기'], 25:['🍲','팥죽 한 그릇'],
+    26:['⛲','이삭의 우물'], 27:['🧤','털옷 변장'], 28:['🪜','야곱의 사다리'], 29:['💕','라헬을 만나요'],
+    30:['🐑','얼룩덜룩 양'], 31:['🏃','몰래 도망'], 32:['🤼','밤새 씨름'], 33:['🤗','형과 화해'],
+    34:['🏘️','세겜에서 생긴 일'], 35:['🏛️','벧엘로 가요'], 36:['📜','에서의 족보'],
+    37:['🧥','채색옷 요셉'], 38:['👣','유다의 가족'], 39:['⛓️','감옥에 간 요셉'], 40:['🍷','두 관원장의 꿈'],
+    41:['🐄','살찐 소, 마른 소'], 42:['🌾','곡식 사러 왔어요'], 43:['👦','베냐민도 같이'], 44:['🏆','은잔 사건'],
+    45:['😭','"내가 요셉이에요!"'], 46:['🧳','이집트로 이사'], 47:['🏡','고센 땅'], 48:['🙌','손자 축복'],
+    49:['🦁','열두 아들 축복'], 50:['💐','선으로 바꾸셨어요']
+  };
+  // 퍼즐 묶음: 첫 칸은 제목 조각(처음부터 맞춰져 있음), 나머지가 장 조각
+  const PUZZLES = [
+    { title:'창조와 노아',  emoji:'🌍', from:1,  to:11, cols:4, bg:'#DCEFFF', ink:'#2563EB' },
+    { title:'아브라함',     emoji:'⛺', from:12, to:25, cols:5, bg:'#FFEFC9', ink:'#D97706' },
+    { title:'이삭과 야곱',  emoji:'🪜', from:26, to:36, cols:4, bg:'#DDF4E4', ink:'#15803D' },
+    { title:'요셉',         emoji:'🧥', from:37, to:50, cols:5, bg:'#ECE2FA', ink:'#7C3AED' }
+  ];
+  const CELL = 100, ROWS = 3, TRAY_H = 200, SNAP = 38;
+  const EMOJI_FONT = '"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif';
+  const TEXT_FONT = '"Pretendard",-apple-system,"Segoe UI","Malgun Gothic",sans-serif';
+  const NS = 'http://www.w3.org/2000/svg';
+
+  function puzzleOf(ch) { return PUZZLES.findIndex(p => ch >= p.from && ch <= p.to); }
+  function chaptersOf(p) { const a = []; for (let c = p.from; c <= p.to; c++) a.push(c); return a; }
+  // 칸 번호: 0 = 제목, 1.. = 장
+  function cellOfChapter(p, ch) { return ch - p.from + 1; }
+  function cellXY(p, idx) { return { x: (idx % p.cols) * CELL, y: Math.floor(idx / p.cols) * CELL }; }
+
+  // ---------- 조각 모양 (직소 퍼즐 볼록/오목) ----------
+  const TAB = [[0,0],[.12,0],[.24,0],[.36,0],[.42,0],[.40,.10],[.36,.16],[.32,.24],[.42,.30],[.50,.30],
+               [.58,.30],[.68,.24],[.64,.16],[.60,.10],[.58,0],[.64,0],[.76,0],[.88,0],[1,0]];
+  function rng(seed) {
+    return function () {
+      seed = seed + 0x6D2B79F5 | 0;
+      let t = Math.imul(seed ^ seed >>> 15, 1 | seed);
+      t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+      return ((t ^ t >>> 14) >>> 0) / 4294967296;
+    };
+  }
+  function edge(ax, ay, bx, by, nx, ny, sign, shift) {
+    if (!sign) return [[ax, ay], [ax + (bx - ax) / 3, ay + (by - ay) / 3], [ax + 2 * (bx - ax) / 3, ay + 2 * (by - ay) / 3], [bx, by]];
+    return TAB.map(([u, v], i) => {
+      const uu = (i >= 3 && i <= 15) ? u + shift : u;
+      return [ax + (bx - ax) * uu + nx * v * CELL * sign, ay + (by - ay) * uu + ny * v * CELL * sign];
+    });
+  }
+  function buildShapes(p, seed) {
+    const rand = rng(seed), cols = p.cols, H = [], V = [];
+    for (let r = 0; r <= ROWS; r++) {
+      H[r] = [];
+      for (let c = 0; c < cols; c++) {
+        const border = r === 0 || r === ROWS;
+        H[r][c] = edge(c * CELL, r * CELL, (c + 1) * CELL, r * CELL, 0, 1,
+          border ? 0 : (rand() < .5 ? 1 : -1), (rand() - .5) * .08);
+      }
+    }
+    for (let c = 0; c <= cols; c++) {
+      V[c] = [];
+      for (let r = 0; r < ROWS; r++) {
+        const border = c === 0 || c === cols;
+        V[c][r] = edge(c * CELL, r * CELL, c * CELL, (r + 1) * CELL, 1, 0,
+          border ? 0 : (rand() < .5 ? 1 : -1), (rand() - .5) * .08);
+      }
+    }
+    const f = pt => pt[0].toFixed(1) + ',' + pt[1].toFixed(1);
+    const paths = [];
+    for (let idx = 0; idx < cols * ROWS; idx++) {
+      const r = Math.floor(idx / cols), c = idx % cols;
+      const pts = [].concat(H[r][c], V[c + 1][r].slice(1),
+        H[r + 1][c].slice().reverse().slice(1), V[c][r].slice().reverse().slice(1));
+      let d = 'M' + f(pts[0]);
+      for (let i = 1; i < pts.length; i += 3) d += 'C' + f(pts[i]) + ' ' + f(pts[i + 1]) + ' ' + f(pts[i + 2]);
+      paths.push(d + 'Z');
+    }
+    return paths;
+  }
+
+  // ---------- 그림 (임시: 칸마다 이모지 장면) ----------
+  // 나중에 진짜 그림이 생기면 이 함수 대신 그림 파일 주소를 쓰면 된다. (같은 비율: 가로 cols×100, 세로 300)
+  function roundRect(g, x, y, w, h, r) {
+    g.beginPath(); g.moveTo(x + r, y); g.arcTo(x + w, y, x + w, y + h, r); g.arcTo(x + w, y + h, x, y + h, r);
+    g.arcTo(x, y + h, x, y, r); g.arcTo(x, y, x + w, y, r); g.closePath();
+  }
+  function fitText(g, text, max, size, weight, font) {
+    let fs = size;
+    g.font = `${weight} ${fs}px ${font}`;
+    while (g.measureText(text).width > max && fs > 8) { fs--; g.font = `${weight} ${fs}px ${font}`; }
+  }
+  const artCache = {};
+  function drawArt(pi) {
+    if (artCache[pi]) return artCache[pi];
+    const p = PUZZLES[pi], W = p.cols * CELL, Hh = ROWS * CELL, S = 3;
+    const cv = document.createElement('canvas');
+    cv.width = W * S; cv.height = Hh * S;
+    const g = cv.getContext('2d');
+    g.scale(S, S);
+    g.fillStyle = p.bg; g.fillRect(0, 0, W, Hh);
+    g.textAlign = 'center'; g.textBaseline = 'middle';
+    // 제목 칸
+    g.fillStyle = p.ink; roundRect(g, 6, 6, CELL - 12, CELL - 12, 14); g.fill();
+    g.font = `40px ${EMOJI_FONT}`; g.fillText(p.emoji, 50, 36);
+    g.fillStyle = '#fff'; fitText(g, p.title, 82, 15, 800, TEXT_FONT); g.fillText(p.title, 50, 70);
+    g.font = `600 10px ${TEXT_FONT}`; g.fillText(`${BOOK} ${p.from}–${p.to}장`, 50, 86);
+    // 장 칸
+    chaptersOf(p).forEach(ch => {
+      const { x, y } = cellXY(p, cellOfChapter(p, ch));
+      const [emo, cap] = SCENES[ch];
+      g.fillStyle = 'rgba(255,255,255,.6)'; roundRect(g, x + 6, y + 6, CELL - 12, CELL - 12, 14); g.fill();
+      g.font = `44px ${EMOJI_FONT}`; g.fillText(emo, x + 50, y + 46);
+      g.fillStyle = p.ink; g.beginPath(); g.arc(x + 19, y + 19, 11, 0, Math.PI * 2); g.fill();
+      g.fillStyle = '#fff'; g.font = `800 12px ${TEXT_FONT}`; g.fillText(String(ch), x + 19, y + 19.5);
+      g.fillStyle = '#334155'; fitText(g, cap, 84, 12, 700, TEXT_FONT); g.fillText(cap, x + 50, y + 83);
+    });
+    return (artCache[pi] = cv.toDataURL('image/png'));
+  }
+
+  // ---------- 화면 ----------
+  const $ = id => document.getElementById(id);
+  const ov = $('pzOv'), stage = $('pzStage'), msgEl = $('pzMsg');
+  const st = { pi: 0, read: new Set(), placed: new Set(), queue: [], cur: null, g: null,
+               dx: 0, dy: 0, s: 1, busy: false, drag: null, hintTimer: null, onPlace: null, onClose: null };
+  let svg, layers, paths, geo;
+
+  function el(tag, attrs) {
+    const e = document.createElementNS(NS, tag);
+    for (const k in attrs) e.setAttribute(k, attrs[k]);
+    return e;
+  }
+  function msg(html) { msgEl.innerHTML = html; }
+  function sceneText(ch) { const [e, c] = SCENES[ch]; return `${e} <b>${ch}장</b> ${c}`; }
+
+  function buildBoard() {
+    const p = PUZZLES[st.pi], W = p.cols * CELL, Hh = ROWS * CELL;
+    paths = buildShapes(p, 20261110 + st.pi * 977);
+    geo = { W, H: Hh, vb: [-8, -8, W + 16, Hh + TRAY_H + 8] };
+    stage.innerHTML = '';
+    svg = el('svg', { class: 'pz-svg', viewBox: geo.vb.join(' ') });
+    const defs = el('defs', {});
+    const img = el('image', { id: 'pzArt', x: 0, y: 0, width: W, height: Hh, preserveAspectRatio: 'none' });
+    const art = drawArt(st.pi);
+    img.setAttribute('href', art);
+    img.setAttributeNS('http://www.w3.org/1999/xlink', 'xlink:href', art);
+    defs.appendChild(img);
+    paths.forEach((d, idx) => { const cp = el('clipPath', { id: 'pzCp' + idx }); cp.appendChild(el('path', { d })); defs.appendChild(cp); });
+    const flt = el('filter', { id: 'pzSh', x: '-30%', y: '-30%', width: '160%', height: '160%' });
+    flt.appendChild(el('feDropShadow', { dx: 0, dy: 4, stdDeviation: 4, 'flood-color': '#000', 'flood-opacity': .3 }));
+    defs.appendChild(flt);
+    svg.appendChild(defs);
+    svg.appendChild(el('rect', { x: -4, y: -4, width: W + 8, height: Hh + 8, rx: 10, fill: '#fff' }));
+    svg.appendChild(el('rect', { class: 'tray', x: 0, y: Hh + 14, width: W, height: TRAY_H - 22, rx: 16 }));
+    const tl = el('text', { class: 'tray-label', x: 16, y: Hh + 36, 'text-anchor': 'start' }); tl.textContent = '새 조각';
+    svg.appendChild(tl);
+    layers = { slots: el('g', {}), placed: el('g', {}), float: el('g', {}) };
+    svg.append(layers.slots, layers.placed, layers.float);
+    stage.appendChild(svg);
+
+    // 제목 조각은 항상 맞춰져 있다
+    layers.placed.appendChild(makePiece(0));
+    chaptersOf(p).forEach(ch => {
+      const idx = cellOfChapter(p, ch);
+      if (st.placed.has(ch)) { layers.placed.appendChild(makePiece(idx, ch)); return; }
+      const { x, y } = cellXY(p, idx);
+      layers.slots.appendChild(el('path', { d: paths[idx], class: 'slot', id: 'pzSlot' + ch }));
+      const t = el('text', { class: 'slot-num', x: x + 50, y: y + 50, id: 'pzNum' + ch }); t.textContent = ch;
+      layers.slots.appendChild(t);
+    });
+    svg.classList.toggle('done', isComplete());
+    bindDrag();
+    fit();
+  }
+
+  function makePiece(idx, ch) {
+    const g = el('g', { class: 'pc fixed' });
+    if (ch) g.dataset.ch = ch;
+    const inner = el('g', { 'clip-path': `url(#pzCp${idx})` });
+    const u = el('use', { href: '#pzArt' });
+    u.setAttributeNS('http://www.w3.org/1999/xlink', 'xlink:href', '#pzArt');
+    inner.appendChild(u);
+    g.append(inner, el('path', { d: paths[idx], class: 'edge' }));
+    return g;
+  }
+
+  function fit() {
+    if (!svg) return;
+    const panel = $('pzPanel');
+    const other = panel.offsetHeight - stage.offsetHeight;
+    const availW = Math.min(560, window.innerWidth - 24) - 24;
+    const availH = window.innerHeight - 24 - other;
+    const ratio = geo.vb[2] / geo.vb[3];
+    const w = Math.max(200, Math.min(availW, availH * ratio));
+    svg.style.width = w + 'px';
+    svg.style.height = (w / ratio) + 'px';
+  }
+
+  function isComplete() { return chaptersOf(PUZZLES[st.pi]).every(ch => st.placed.has(ch)); }
+  function countText() { const p = PUZZLES[st.pi]; return `${chaptersOf(p).filter(c => st.placed.has(c)).length} / ${p.to - p.from + 1}`; }
+  function waitingElsewhere() {
+    return [...st.read].filter(ch => !st.placed.has(ch) && puzzleOf(ch) !== st.pi).length;
+  }
+
+  function updateHead() {
+    const p = PUZZLES[st.pi];
+    $('pzName').textContent = `${p.emoji} ${p.title}`;
+    $('pzRange').textContent = `${BOOK} ${p.from}–${p.to}장 · 퍼즐 ${st.pi + 1}/${PUZZLES.length}`;
+    $('pzCount').textContent = countText();
+    $('pzPrev').disabled = st.pi === 0;
+    $('pzNext').disabled = st.pi === PUZZLES.length - 1;
+    $('pzHint').disabled = !st.cur;
+    $('pzAuto').disabled = !st.cur;
+    $('pzAuto').textContent = st.queue.length > 0 ? `✨ 모두 맞추기 (${st.queue.length + 1})` : '✨ 자동으로 맞추기';
+  }
+
+  function setT() {
+    if (!st.g) return;
+    const p = PUZZLES[st.pi], { x, y } = cellXY(p, cellOfChapter(p, st.cur));
+    const cx = x + 50, cy = y + 50;
+    st.g.setAttribute('transform', `translate(${st.dx + cx} ${st.dy + cy}) scale(${st.s}) translate(${-cx} ${-cy})`);
+  }
+
+  function tween(ms, fn, done) {
+    const t0 = performance.now();
+    function step(t) {
+      const raw = Math.min(1, (t - t0) / ms);
+      fn(1 - Math.pow(1 - raw, 3));
+      if (raw < 1) requestAnimationFrame(step); else if (done) done();
+    }
+    requestAnimationFrame(step);
+  }
+
+  function clearHint() {
+    clearTimeout(st.hintTimer);
+    svg && svg.querySelectorAll('.slot.hint').forEach(s => s.classList.remove('hint'));
+  }
+  function showHint() {
+    if (!st.cur) return;
+    const s = $('pzSlot' + st.cur);
+    if (s) s.classList.add('hint');
+  }
+
+  function showNext() {
+    clearHint();
+    layers.float.innerHTML = '';
+    st.g = null;
+    st.cur = st.queue.shift() || null;
+    updateHead();
+    if (!st.cur) { idleMessage(); return; }
+    const p = PUZZLES[st.pi], ch = st.cur, { x, y } = cellXY(p, cellOfChapter(p, ch));
+    st.dx = geo.W / 2 - (x + 50);
+    st.dy = geo.H + 14 + (TRAY_H - 22) / 2 - (y + 50);
+    st.g = makePiece(cellOfChapter(p, ch), ch);
+    st.g.setAttribute('class', 'pc float');
+    st.g.setAttribute('filter', 'url(#pzSh)');
+    layers.float.appendChild(st.g);
+    st.busy = true;
+    tween(350, k => { st.s = .3 + .7 * k; setT(); }, () => { st.busy = false; });
+    msg(`🧩 ${sceneText(ch)}<br><small>조각이 생겼어요! 끌어서 제자리에 끼워 보세요</small>`);
+    st.hintTimer = setTimeout(showHint, 7000);
+  }
+
+  function idleMessage() {
+    const other = waitingElsewhere();
+    if (isComplete()) msg(`🎉 <b>'${PUZZLES[st.pi].title}'</b> 퍼즐 완성!` + (other ? `<br><small>다른 퍼즐에 새 조각 ${other}개가 기다려요</small>` : ''));
+    else if (other) msg(`다른 퍼즐에 새 조각 <b>${other}개</b>가 기다려요 ◀ ▶`);
+    else msg('맞춘 조각을 누르면 그 장의 이야기가 보여요');
+  }
+
+  function place(animMs, then) {
+    const ch = st.cur, g = st.g, sx = st.dx, sy = st.dy, ss = st.s;
+    st.busy = true;
+    clearHint();
+    tween(animMs, k => { st.dx = sx * (1 - k); st.dy = sy * (1 - k); st.s = ss + (1 - ss) * k; setT(); }, () => {
+      const p = PUZZLES[st.pi], idx = cellOfChapter(p, ch);
+      st.placed.add(ch);
+      ['pzSlot', 'pzNum'].forEach(k => { const e = $(k + ch); if (e) e.remove(); });
+      g.removeAttribute('filter'); g.removeAttribute('transform');
+      g.setAttribute('class', 'pc fixed');
+      layers.placed.appendChild(g);
+      const fl = el('path', { d: paths[idx], class: 'flash' });
+      layers.placed.appendChild(fl);
+      setTimeout(() => fl.remove(), 650);
+      try { navigator.vibrate && navigator.vibrate(30); } catch (e) {}
+      st.g = null; st.cur = null; st.busy = false;
+      if (st.onPlace) st.onPlace(ch);
+      $('pzCount').textContent = countText();
+      if (isComplete()) {
+        updateHead();
+        svg.classList.add('done');
+        msg(`🎉 <b>'${PUZZLES[st.pi].title}'</b> 퍼즐 완성! 정말 잘했어요 👏`);
+        confetti();
+        return;
+      }
+      msg(`착! ✨ ${sceneText(ch)}`);
+      if (then) then();
+      else setTimeout(() => { if (!st.cur && st.queue.length) showNext(); else updateHead(); }, 700);
+    });
+  }
+
+  function svgPoint(e) {
+    const pt = svg.createSVGPoint();
+    pt.x = e.clientX; pt.y = e.clientY;
+    return pt.matrixTransform(svg.getScreenCTM().inverse());
+  }
+
+  function bindDrag() {
+    svg.addEventListener('pointerdown', e => {
+      const fixed = e.target.closest && e.target.closest('.pc.fixed');
+      if (fixed && fixed.dataset.ch) { msg(sceneText(Number(fixed.dataset.ch))); return; }
+      if (st.busy || !st.g || !e.target.closest('.pc.float')) return;
+      e.preventDefault();
+      const p0 = svgPoint(e);
+      st.drag = { id: e.pointerId, x: p0.x, y: p0.y, dx: st.dx, dy: st.dy };
+      try { svg.setPointerCapture(e.pointerId); } catch (err) {}
+      st.s = 1.08; setT();
+      clearTimeout(st.hintTimer);
+    });
+    svg.addEventListener('pointermove', e => {
+      if (!st.drag || e.pointerId !== st.drag.id) return;
+      const pt = svgPoint(e), p = PUZZLES[st.pi], { x, y } = cellXY(p, cellOfChapter(p, st.cur));
+      const vb = geo.vb;
+      let dx = st.drag.dx + pt.x - st.drag.x, dy = st.drag.dy + pt.y - st.drag.y;
+      // 조각 가운데가 화면 밖으로 나가지 않게
+      dx = Math.max(vb[0] - x - 10, Math.min(vb[0] + vb[2] - x - 90, dx));
+      dy = Math.max(vb[1] - y - 10, Math.min(vb[1] + vb[3] - y - 90, dy));
+      st.dx = dx; st.dy = dy; setT();
+    });
+    const end = e => {
+      if (!st.drag || e.pointerId !== st.drag.id) return;
+      st.drag = null;
+      if (Math.hypot(st.dx, st.dy) < SNAP) { place(180); return; }
+      st.s = 1; setT();
+      st.hintTimer = setTimeout(showHint, 5000);
+    };
+    svg.addEventListener('pointerup', end);
+    svg.addEventListener('pointercancel', end);
+  }
+
+  function autoAll() {
+    if (!st.cur || st.busy) return;
+    place(550, () => { if (st.queue.length) { setTimeout(() => { showNext(); setTimeout(autoAll, 380); }, 250); } else updateHead(); });
+  }
+
+  function confetti() {
+    const panel = $('pzPanel'), items = ['🎉', '✨', '⭐', '🧩', '💛', '🎊'];
+    for (let i = 0; i < 28; i++) {
+      const s = document.createElement('span');
+      s.className = 'confetti';
+      s.textContent = items[i % items.length];
+      s.style.left = Math.random() * 100 + '%';
+      s.style.animationDuration = (1.6 + Math.random() * 1.4) + 's';
+      s.style.animationDelay = (Math.random() * .4) + 's';
+      panel.appendChild(s);
+      setTimeout(() => s.remove(), 3600);
+    }
+  }
+
+  function loadPuzzle(pi, focus) {
+    st.pi = pi;
+    st.cur = null; st.g = null; st.drag = null;
+    const p = PUZZLES[pi];
+    st.queue = chaptersOf(p).filter(ch => st.read.has(ch) && !st.placed.has(ch));
+    if (focus && st.queue.indexOf(focus) > 0) { st.queue.splice(st.queue.indexOf(focus), 1); st.queue.unshift(focus); }
+    buildBoard();
+    showNext();
+  }
+
+  function open(opts) {
+    st.read = new Set(opts.read || []);
+    st.placed = new Set([...(opts.placed || [])].filter(ch => st.read.has(ch)));
+    st.onPlace = opts.onPlace || null;
+    st.onClose = opts.onClose || null;
+    let pi = opts.focus ? puzzleOf(opts.focus) : -1;
+    if (pi < 0) pi = PUZZLES.findIndex(p => chaptersOf(p).some(ch => st.read.has(ch) && !st.placed.has(ch)));
+    if (pi < 0) pi = Math.max(0, PUZZLES.findIndex(p => !chaptersOf(p).every(ch => st.placed.has(ch))));
+    ov.classList.add('show');
+    ov.setAttribute('aria-hidden', 'false');
+    loadPuzzle(pi, opts.focus);
+  }
+
+  function close() {
+    clearHint();
+    ov.classList.remove('show');
+    ov.setAttribute('aria-hidden', 'true');
+    if (st.onClose) st.onClose();
+  }
+
+  $('pzClose').onclick = close;
+  $('pzPrev').onclick = () => { if (st.pi > 0 && !st.busy) loadPuzzle(st.pi - 1); };
+  $('pzNext').onclick = () => { if (st.pi < PUZZLES.length - 1 && !st.busy) loadPuzzle(st.pi + 1); };
+  $('pzHint').onclick = showHint;
+  $('pzAuto').onclick = () => { if (st.queue.length) autoAll(); else if (st.cur && !st.busy) place(550); };
+  window.addEventListener('resize', fit);
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && ov.classList.contains('show')) close(); });
+
+  window.BiblePuzzle = { open, close, PUZZLES, SCENES, puzzleOf };
+})();
+
+// ============================================================
+// 시범 화면 (진짜 앱에서는 어통조아의 읽은 기록을 그대로 쓴다)
+// ============================================================
+(function () {
+  const LS_READ = 'pzDemoRead', LS_PLACED = 'pzDemoPlaced';
+  const load = k => { try { return new Set(JSON.parse(localStorage.getItem(k) || '[]')); } catch (e) { return new Set(); } };
+  const save = (k, s) => { try { localStorage.setItem(k, JSON.stringify([...s])); } catch (e) {} };
+  let read = load(LS_READ), placed = load(LS_PLACED);
+  const { PUZZLES } = window.BiblePuzzle;
+  const $ = id => document.getElementById(id);
+
+  let toastTimer;
+  function toast(text) {
+    const t = $('toast'); t.textContent = text; t.classList.add('show');
+    clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('show'), 2200);
+  }
+
+  function render() {
+    const box = $('secList');
+    box.innerHTML = '<h2>창세기 읽기</h2>';
+    PUZZLES.forEach(p => {
+      const sec = document.createElement('div'); sec.className = 'sec';
+      let done = 0; for (let c = p.from; c <= p.to; c++) if (placed.has(c)) done++;
+      sec.innerHTML = `<p class="sec-title" style="color:${p.ink}"><span>${p.emoji} ${p.title} (${p.from}–${p.to}장)</span><span>🧩 ${done}/${p.to - p.from + 1}</span></p>`;
+      const grid = document.createElement('div'); grid.className = 'ch-grid';
+      for (let c = p.from; c <= p.to; c++) {
+        const b = document.createElement('button');
+        b.className = 'ch' + (read.has(c) ? ' read' : '') + (read.has(c) && !placed.has(c) ? ' wait' : '');
+        b.textContent = c;
+        b.onclick = () => onChapter(c);
+        grid.appendChild(b);
+      }
+      sec.appendChild(grid);
+      box.appendChild(sec);
+    });
+  }
+
+  function openPuzzle(focus) {
+    window.BiblePuzzle.open({
+      read, placed, focus,
+      onPlace(ch) { placed.add(ch); save(LS_PLACED, placed); render(); }
+    });
+  }
+
+  function onChapter(ch) {
+    if (read.has(ch)) {
+      read.delete(ch); placed.delete(ch);
+      save(LS_READ, read); save(LS_PLACED, placed); render();
+      toast(`${ch}장 읽음을 취소했어요 (조각도 빠졌어요)`);
+      return;
+    }
+    read.add(ch); save(LS_READ, read); render();
+    openPuzzle(ch);
+  }
+
+  $('bOpen').onclick = () => openPuzzle(null);
+  $('bMany').onclick = () => {
+    const add = []; for (let c = 1; c <= 50 && add.length < 5; c++) if (!read.has(c)) add.push(c);
+    if (!add.length) { toast('이미 다 읽었어요!'); return; }
+    add.forEach(c => read.add(c)); save(LS_READ, read); render();
+    openPuzzle(add[0]);
+  };
+  $('bPast').onclick = () => {
+    const pool = []; for (let c = 1; c <= 50; c++) if (!read.has(c)) pool.push(c);
+    pool.sort(() => Math.random() - .5).slice(0, 10).forEach(c => { read.add(c); placed.add(c); });
+    save(LS_READ, read); save(LS_PLACED, placed); render();
+    toast("'이전' 기록을 넣었어요 — 퍼즐판에 이미 맞춰져 있어요");
+  };
+  let resetArmed = false, resetTimer;
+  $('bReset').onclick = () => {
+    if (!resetArmed) {
+      resetArmed = true; $('bReset').textContent = '정말 지울까요? 한 번 더';
+      resetTimer = setTimeout(() => { resetArmed = false; $('bReset').textContent = '↺ 처음부터'; }, 3000);
+      return;
+    }
+    clearTimeout(resetTimer); resetArmed = false; $('bReset').textContent = '↺ 처음부터';
+    read = new Set(); placed = new Set(); save(LS_READ, read); save(LS_PLACED, placed); render();
+    toast('처음 상태로 돌렸어요');
+  };
+  render();
+})();
+</script>
+</body>
+</html>
