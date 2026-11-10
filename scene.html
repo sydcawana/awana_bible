@@ -1,0 +1,787 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>어통조아 장면판 (시범)</title>
+<link rel="icon" href="icons/icon-192.png">
+<style>
+  :root { --blue:#1D3557; --yellow:#FFB703; --green:#68C496; --bg:#F4F7F6; --spd:1; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:#333;
+    font-family:'Pretendard',-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Malgun Gothic",sans-serif; }
+  .wrap { max-width:520px; margin:0 auto; padding:16px; }
+  .top { background:var(--blue); color:#fff; border-radius:16px; padding:16px 18px; margin-bottom:12px; }
+  .top h1 { font-size:20px; margin:0 0 6px; }
+  .top p { margin:0; font-size:13px; opacity:.88; line-height:1.55; }
+  .card { background:#fff; border-radius:16px; padding:14px; box-shadow:0 2px 8px rgba(0,0,0,.05); margin-bottom:12px; }
+  .card h2 { font-size:15px; margin:0 0 10px; color:var(--blue); display:flex; justify-content:space-between; }
+  .ch-grid { display:grid; grid-template-columns:repeat(6,1fr); gap:7px; }
+  .ch { border:1.5px solid #dee2e6; background:#fff; border-radius:12px; height:44px; font-size:15px; font-weight:700; color:#495057; cursor:pointer; position:relative; }
+  .ch.read { background:var(--green); border-color:var(--green); color:#fff; }
+  .ch.wait::after { content:'✨'; position:absolute; right:-4px; top:-8px; font-size:13px; }
+  .bar { display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
+  .btn { border:0; border-radius:12px; padding:11px 14px; font-size:14px; font-weight:700; cursor:pointer; background:#e9ecef; color:#333; min-height:44px; }
+  .btn.primary { background:var(--blue); color:#fff; }
+  .btn.yellow { background:var(--yellow); color:var(--blue); }
+  .btn:disabled { opacity:.4; cursor:default; }
+  .note { font-size:12px; color:#6c757d; line-height:1.5; margin:8px 0 0; }
+  .dbg { border:2px dashed #ced4da; }
+  .dbg input[type=range] { flex:1; min-width:160px; accent-color:var(--blue); }
+  .dbg b { min-width:34px; text-align:center; font-size:18px; color:var(--blue); }
+  .toast { position:fixed; left:50%; bottom:24px; transform:translateX(-50%) translateY(20px); opacity:0; background:rgba(29,53,87,.95); color:#fff;
+    padding:10px 16px; border-radius:12px; font-size:14px; transition:.25s; pointer-events:none; z-index:2000; max-width:90vw; text-align:center; }
+  .toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+
+  /* ---------- 장면판 오버레이 ---------- */
+  .sc-ov { position:fixed; inset:0; background:rgba(29,53,87,.62); display:none; align-items:center; justify-content:center; z-index:1000; padding:10px; }
+  .sc-ov.show { display:flex; }
+  .sc-panel { background:#fff; border-radius:20px; width:100%; max-width:460px; padding:10px 10px 12px; box-shadow:0 10px 40px rgba(0,0,0,.3); position:relative; overflow:hidden; }
+  .sc-head { display:flex; align-items:center; gap:6px; margin-bottom:6px; }
+  .sc-nav, .sc-x { border:0; background:#f1f3f5; width:40px; height:40px; border-radius:50%; font-size:16px; cursor:pointer; flex:none; color:var(--blue); }
+  .sc-nav:disabled { opacity:.3; cursor:default; }
+  .sc-title { flex:1; text-align:center; line-height:1.2; min-width:0; }
+  .sc-title b { display:block; font-size:16px; color:var(--blue); }
+  .sc-title small { font-size:12px; color:#6c757d; }
+  .sc-count { font-weight:800; color:#fff; background:var(--blue); border-radius:999px; padding:4px 10px; font-size:13px; flex:none; }
+  .sc-msg { font-size:15px; line-height:1.35; background:#FFF8E1; border-radius:12px; padding:6px 10px; margin-bottom:6px; height:52px;
+    display:flex; align-items:center; justify-content:center; text-align:center; overflow:hidden; }
+  .sc-msg small { font-size:12px; color:#6c757d; }
+  .sc-stage { position:relative; display:flex; justify-content:center; }
+  .sc-svg { display:block; border-radius:14px; touch-action:manipulation; user-select:none; -webkit-user-select:none; }
+  .sc-tools { display:flex; gap:8px; justify-content:center; margin-top:8px; flex-wrap:wrap; }
+
+  /* 퀴즈 */
+  .quiz { position:absolute; inset:0; display:none; align-items:flex-end; justify-content:center; padding:10px; background:rgba(14,19,40,.35); border-radius:14px; }
+  .quiz.show { display:flex; }
+  .quiz-card { background:#fff; border-radius:18px; padding:14px; width:100%; max-width:380px; box-shadow:0 8px 24px rgba(0,0,0,.25); animation:qIn .3s ease-out; }
+  @keyframes qIn { from { transform:translateY(30px); opacity:0; } to { transform:none; opacity:1; } }
+  .quiz-q { font-size:17px; font-weight:800; color:var(--blue); text-align:center; margin:0 0 10px; line-height:1.35; }
+  .quiz-opts { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .quiz-opt { border:2.5px solid #dee2e6; background:#fff; border-radius:16px; min-height:84px; padding:8px; cursor:pointer; font-size:15px; font-weight:800; color:#333; }
+  .quiz-opt span { display:block; font-size:30px; margin-bottom:2px; }
+  .quiz-opt.wrong { border-color:#FFA8A8; background:#FFF5F5; color:#C92A2A; animation:qShake .4s; }
+  .quiz-opt.right { border-color:var(--green); background:#EBFBEE; }
+  @keyframes qShake { 25% { transform:translateX(-6px); } 75% { transform:translateX(6px); } }
+  .quiz-hint { min-height:22px; font-size:14px; color:#E67700; text-align:center; margin-top:8px; font-weight:700; }
+
+  /* 완성 뱃지 */
+  .badge { position:absolute; inset:0; display:none; align-items:center; justify-content:center; padding:16px; }
+  .badge.show { display:flex; }
+  .badge-card { background:rgba(255,255,255,.96); border-radius:20px; padding:16px 18px; text-align:center; box-shadow:0 8px 30px rgba(0,0,0,.25); animation:qIn .4s ease-out; }
+  .badge-medal { width:76px; height:76px; margin:0 auto 6px; border-radius:50%; background:radial-gradient(circle at 35% 30%, #FFF3BF, #FFC94D 60%, #E8A317);
+    display:flex; align-items:center; justify-content:center; font-size:34px; box-shadow:0 0 0 5px #FFE8A3; }
+  .badge-card h3 { margin:4px 0 4px; font-size:19px; color:var(--blue); }
+  .badge-card p { margin:0 0 10px; font-size:13px; color:#6c757d; }
+
+  /* ---------- SVG 장면 ---------- */
+  .L { opacity:0; transition:opacity calc(.7s * var(--spd)); }
+  .L.on { opacity:1; }
+  .L.on.a-fade  > .A { animation:aFade  calc(.9s * var(--spd)) ease-out both; }
+  .L.on.a-grow  > .A { animation:aGrow  calc(.8s * var(--spd)) cubic-bezier(.3,1.5,.6,1) both; }
+  .L.on.a-rise  > .A { animation:aRise  calc(.9s * var(--spd)) ease-out both; }
+  .L.on.a-drop  > .A { animation:aDrop  calc(.8s * var(--spd)) cubic-bezier(.3,1.4,.6,1) both; }
+  .L.on.a-fly   > .A { animation:aFly   calc(1.4s * var(--spd)) ease-out both; }
+  .L.on.a-walk  > .A { animation:aWalk  calc(1.6s * var(--spd)) ease-out both; }
+  .L.on.a-build > .A { animation:aBuild calc(1.1s * var(--spd)) ease-out both; }
+  .L.on.a-walkin > .A { animation:aWalkIn calc(1.8s * var(--spd)) ease-in-out both; }
+  .A { transform-box:fill-box; transform-origin:50% 100%; }
+  @keyframes aFade  { from { opacity:0; } to { opacity:1; } }
+  @keyframes aGrow  { from { opacity:0; transform:scale(.2); } to { opacity:1; transform:none; } }
+  @keyframes aRise  { from { opacity:0; transform:translateY(40px); } to { opacity:1; transform:none; } }
+  @keyframes aDrop  { from { opacity:0; transform:translateY(-50px); } to { opacity:1; transform:none; } }
+  @keyframes aFly   { from { opacity:0; transform:translate(-160px,-30px); } to { opacity:1; transform:none; } }
+  @keyframes aWalk  { from { opacity:0; transform:translateX(-120px); } to { opacity:1; transform:none; } }
+  @keyframes aBuild { from { opacity:0; transform:scaleY(0); } to { opacity:1; transform:none; } }
+  @keyframes aWalkIn { 0% { opacity:0; transform:translateX(110px); } 15% { opacity:1; } 80% { opacity:1; transform:none; } 100% { opacity:0; transform:translateX(-10px); } }
+
+  /* 상태에 따른 변화 */
+  #water { transform:translateY(340px); transition:transform calc(2.6s * var(--spd)) ease-in-out; }
+  .f-flood #water { transform:none; }
+  #arkMove { transition:transform calc(2.6s * var(--spd)) ease-in-out; }
+  .f-flood #arkMove { transform:translate(0px, -192px); }
+  .ark-rest #arkMove { transform:translate(104px, -168px); }
+  .ending #arkMove { transform:translate(-20px, -58px); }
+  /* 엔딩: 방주가 무지개 아래 바다를 항해 (탑과 사람들은 잠시 숨김) */
+  .ending [data-art=tower], .ending [data-art=builders], .ending [data-art=walkers] { opacity:0 !important; }
+  .ending #arkBob { animation:sail calc(4s * var(--spd)) ease-in-out infinite; }
+  @keyframes sail { 0%,100% { transform:translate(-30px,0) rotate(-2deg); } 50% { transform:translate(30px,-3px) rotate(2deg); } }
+  #arkRibs { transition:opacity .8s; }
+  #arkHull { opacity:0; transition:opacity calc(.9s * var(--spd)); }
+  .ark-done #arkHull, .ark-rest #arkHull, .ending #arkHull { opacity:1; }
+  .ark-done #arkRibs, .ark-rest #arkRibs, .ending #arkRibs { opacity:0; }
+  #hammer { transform-box:fill-box; transform-origin:10% 90%; }
+  .ark-frame #hammer { animation:hammer .5s ease-in-out infinite alternate; }
+  @keyframes hammer { from { transform:rotate(-35deg); } to { transform:rotate(15deg); } }
+  #peopleMove { transition:transform calc(1.4s * var(--spd)) ease-in-out; }
+  .f-gateClosed #peopleMove { transform:translateX(92px); }
+  .door { transform-box:fill-box; transition:transform calc(.9s * var(--spd)) ease-in-out; transform:scaleX(.15); }
+  #doorL { transform-origin:0% 50%; } #doorR { transform-origin:100% 50%; }
+  .f-gateClosed .door { transform:none; }
+  #gateGlow { opacity:0; transition:opacity 1s; }
+  .f-gateClosed #gateGlow { opacity:1; }
+  .flame-f { transform-box:fill-box; transform-origin:50% 100%; animation:flick .6s ease-in-out infinite alternate; }
+  @keyframes flick { from { transform:scale(1,1); } to { transform:scale(.88,1.12); } }
+  #rainDrops { animation:rainFall .7s linear infinite; }
+  @keyframes rainFall { from { transform:translateY(-40px); } to { transform:translateY(0); } }
+  .tier { transform-box:fill-box; transform-origin:50% 100%; }
+  .L.on.a-build .tier { animation:aBuild calc(.35s * var(--spd)) ease-out both; }
+  .shake #towerBody { animation:shake .12s linear 6; transform-box:fill-box; transform-origin:50% 100%; }
+  @keyframes shake { 0%,100% { transform:rotate(0); } 25% { transform:rotate(-2.5deg); } 75% { transform:rotate(2.5deg); } }
+  #towerTop { transition:transform calc(.8s * var(--spd)); transform-box:fill-box; transform-origin:0% 100%; }
+  .f-scattered #towerTop { transform:rotate(14deg) translate(4px,2px); }
+  .bld { transition:transform calc(1.6s * var(--spd)) ease-out; }
+  .f-scattered #bld1 { transform:translate(-80px, 30px); }
+  .f-scattered #bld2 { transform:translate(150px, 20px); }
+  .f-scattered #bld3 { transform:translate(-40px, 52px); }
+  .f-scattered #bld4 { transform:translate(190px, 50px); }
+  #introText { opacity:0; transition:opacity 1s; }
+  .f-empty #introText { opacity:1; }
+  #flash { opacity:0; pointer-events:none; }
+  .flashing #flash { animation:flash calc(1.4s * var(--spd)) ease-out; }
+  @keyframes flash { 0% { opacity:0; } 20% { opacity:.75; } 100% { opacity:0; } }
+  .ending #rainbowArcs { animation:glow 2s ease-in-out infinite alternate; }
+  @keyframes glow { from { opacity:.75; } to { opacity:1; } }
+  .hintq { animation:twinkle 1.6s ease-in-out infinite; transform-box:fill-box; transform-origin:center; }
+  @keyframes twinkle { 0%,100% { opacity:.55; transform:scale(.9); } 50% { opacity:1; transform:scale(1.1); } }
+  .bubble { animation:pop .35s cubic-bezier(.3,1.6,.6,1) both; transform-box:fill-box; transform-origin:50% 100%; }
+  @keyframes pop { from { opacity:0; transform:scale(.3); } to { opacity:1; transform:none; } }
+  .bubble text { font-size:13px; font-weight:800; fill:#1D3557; text-anchor:middle; dominant-baseline:central; }
+  .no-tr *, .no-tr { transition:none !important; animation:none !important; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .L, #water, #arkMove, #peopleMove, .door, #towerTop, .bld { transition-duration:.01s !important; }
+    .A, .tier, .bubble, .hintq, #rainDrops, #hammer, .flame-f, #arkBob, #rainbowArcs, #towerBody { animation:none !important; }
+    .flashing #flash { animation:none; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <h1>🌍 창조와 노아 장면판 (시범)</h1>
+    <p>한 장을 읽을 때마다 퀴즈 하나! 맞히면 세상이 한 장면씩 자라요.<br>
+      ※ 시범용이라 진짜 통독 기록에는 저장되지 않아요.</p>
+  </div>
+
+  <div class="card">
+    <h2><span>창세기 1–11장</span><span id="prog"></span></h2>
+    <div class="ch-grid" id="grid"></div>
+    <p class="note">장 번호를 누르면 '읽음' → 퀴즈 → 장면이 바뀌어요. 읽은 장을 다시 누르면 취소돼요.</p>
+  </div>
+
+  <div class="card">
+    <div class="bar"><button class="btn primary" id="bOpen">🌍 장면판 보기</button></div>
+  </div>
+
+  <div class="card dbg">
+    <h2><span>🛠 개발용</span></h2>
+    <div class="bar">
+      <span style="font-size:13px">읽은 장 수</span>
+      <input type="range" id="dbgN" min="0" max="11" step="1" value="0">
+      <b id="dbgV">0</b>
+      <button class="btn" id="dbgGo">이 상태로 보기</button>
+    </div>
+    <div class="bar" style="margin-top:8px">
+      <button class="btn" id="dbgNext">📖 다음 장 읽기 (보상 흐름)</button>
+      <button class="btn" id="bReset">↺ 처음부터</button>
+    </div>
+    <p class="note">주소 끝에 <code>?n=7</code>을 붙이면 7장까지 읽은 장면판이 바로 열려요.</p>
+  </div>
+</div>
+
+<div class="sc-ov" id="scOv" aria-hidden="true">
+  <div class="sc-panel" id="scPanel">
+    <div class="sc-head">
+      <button class="sc-nav" id="scPrev" aria-label="이전 장면">◀</button>
+      <div class="sc-title"><b id="scName"></b><small id="scSub"></small></div>
+      <button class="sc-nav" id="scNext" aria-label="다음 장면">▶</button>
+      <span class="sc-count" id="scCount"></span>
+      <button class="sc-x" id="scClose" aria-label="닫기">✕</button>
+    </div>
+    <div class="sc-msg" id="scMsg"></div>
+    <div class="sc-stage" id="scStage">
+      <div class="quiz" id="quiz"><div class="quiz-card">
+        <p class="quiz-q" id="quizQ"></p>
+        <div class="quiz-opts" id="quizOpts"></div>
+        <div class="quiz-hint" id="quizHint"></div>
+      </div></div>
+      <div class="badge" id="badge"><div class="badge-card">
+        <div class="badge-medal">🌈</div>
+        <h3 id="badgeTitle"></h3>
+        <p>창세기 1–11장을 다 읽었어요!</p>
+        <button class="btn" id="badgeNext" disabled></button>
+        <div style="margin-top:8px"><button class="btn primary" id="badgeClose">장면 다시 보기</button></div>
+      </div></div>
+    </div>
+    <div class="sc-tools">
+      <button class="btn" id="scPlay">⏵ 처음부터 재생</button>
+      <button class="btn yellow" id="scQuiz" style="display:none"></button>
+    </div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script src="scenes/genesis-1-11.js"></script>
+<script>
+// ============================================================
+// 장면판 엔진 (SceneBoard)
+//   장면 = SVG 하나 + 레이어(그림)들. 각 장의 데이터가 레이어를 켜거나 장면 상태(물 높이 등)를 바꾼다.
+//   '본 장' 목록 S로 장면 상태를 계산한다 → 몇 장까지 읽었든 누적 상태가 그대로 보인다.
+// ============================================================
+(function () {
+  const W = 360, H = 480, NS = 'http://www.w3.org/2000/svg';
+  const BOOK = window.SCENE_BOOKS[0];
+  const CH = {}; BOOK.chapters.forEach(c => { CH[c.chapter] = c; });
+  const ALL = BOOK.chapters.map(c => c.chapter);
+  const $ = id => document.getElementById(id);
+  const reduced = () => window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  // 진짜 그림으로 바꿀 때 쓰는 자리 크기 [x, y, 너비, 높이] (ASSETS에 경로를 넣으면 이 자리에 그림이 들어간다)
+  const ART_BOX = {
+    light:[0,0,360,480], sky:[0,0,360,480], sea:[0,240,360,110], land:[0,180,360,300], sun:[270,28,70,70], moon:[25,28,40,40],
+    stars:[0,0,360,200], plants:[0,340,360,140], fish:[20,270,200,60], birds:[90,60,150,60], animals:[10,430,110,50],
+    river:[40,340,90,140], edenTrees:[5,330,135,85], gate:[132,350,20,130], people:[60,405,50,55], hippo:[98,438,40,30],
+    snake:[95,350,30,60], fruit:[86,400,20,30], altars:[240,385,110,60], flame:[252,370,28,36], family:[150,445,210,35],
+    cake:[186,385,40,45], ark:[130,280,130,85], noah:[240,340,40,50], pairs:[228,352,130,45], rain:[0,0,360,480],
+    dove:[240,130,50,40], rainbow:[0,120,360,230], noahFamily:[240,355,80,40], villages:[10,380,350,95],
+    walkers:[150,360,200,90], tower:[80,195,80,240], builders:[110,390,90,45]
+  };
+
+  // ---------- 기본 도형 그림 (파스텔·둥근 모양) ----------
+  const person = (x, y, body, s = 1, extra = '') =>
+    `<g transform="translate(${x} ${y}) scale(${s})">
+      <ellipse cx="0" cy="2" rx="7" ry="2" fill="rgba(0,0,0,.12)"/>
+      <path d="M-6,0 Q-7,-14 0,-15 Q7,-14 6,0 Z" fill="${body}"/>
+      <circle cx="0" cy="-20" r="6" fill="#F6D2B0"/>
+      <circle cx="-2" cy="-21" r=".9" fill="#5C4033"/><circle cx="2" cy="-21" r=".9" fill="#5C4033"/>
+      <path d="M-2,-18 Q0,-16.5 2,-18" stroke="#B5655A" stroke-width=".8" fill="none"/>${extra}</g>`;
+  const tree = (x, y, r, c1, c2) =>
+    `<g><rect x="${x - r * .14}" y="${y - r * .3}" width="${r * .28}" height="${r * .9}" rx="3" fill="#A47551"/>
+      <circle cx="${x}" cy="${y - r * .55}" r="${r}" fill="${c1}"/>
+      <circle cx="${x - r * .45}" cy="${y - r * .35}" r="${r * .62}" fill="${c2}"/>
+      <circle cx="${x + r * .5}" cy="${y - r * .4}" r="${r * .58}" fill="${c2}" opacity=".85"/></g>`;
+  const sheep = (x, y, s = 1) =>
+    `<g transform="translate(${x} ${y}) scale(${s})"><ellipse cx="0" cy="1" rx="10" ry="2" fill="rgba(0,0,0,.1)"/>
+      <circle cx="-5" cy="-7" r="5" fill="#fff"/><circle cx="1" cy="-9" r="6" fill="#fff"/><circle cx="6" cy="-6" r="5" fill="#fff"/>
+      <ellipse cx="9" cy="-9" rx="3.2" ry="3.8" fill="#6B5B53"/><rect x="-4" y="-3" width="2" height="4" fill="#6B5B53"/><rect x="3" y="-3" width="2" height="4" fill="#6B5B53"/></g>`;
+  const house = (x, y, wall, roof) =>
+    `<g><rect x="${x - 11}" y="${y - 16}" width="22" height="16" rx="2" fill="${wall}"/>
+      <path d="M${x - 14},${y - 15} L${x},${y - 28} L${x + 14},${y - 15} Z" fill="${roof}"/>
+      <rect x="${x - 3}" y="${y - 9}" width="6" height="9" rx="2" fill="#A47551"/></g>`;
+  const animal = (x, y, kind, s = 1) => {
+    const k = {
+      elephant: `<ellipse cx="0" cy="-10" rx="12" ry="9" fill="#B8C0CC"/><circle cx="-11" cy="-14" r="6" fill="#B8C0CC"/><path d="M-16,-12 Q-20,-4 -17,0" stroke="#B8C0CC" stroke-width="3" fill="none"/><rect x="-8" y="-4" width="4" height="5" fill="#9AA3B0"/><rect x="5" y="-4" width="4" height="5" fill="#9AA3B0"/><circle cx="-12" cy="-15" r="1" fill="#333"/>`,
+      giraffe: `<ellipse cx="0" cy="-12" rx="9" ry="6" fill="#F7C96B"/><path d="M-6,-14 L-10,-34" stroke="#F7C96B" stroke-width="5" stroke-linecap="round"/><ellipse cx="-11" cy="-36" rx="4.5" ry="3.5" fill="#F7C96B"/><circle cx="2" cy="-13" r="1.6" fill="#D9973F"/><circle cx="-3" cy="-10" r="1.4" fill="#D9973F"/><rect x="-6" y="-8" width="2.5" height="8" fill="#E5B455"/><rect x="4" y="-8" width="2.5" height="8" fill="#E5B455"/><circle cx="-12" cy="-37" r=".9" fill="#333"/>`,
+      lion: `<circle cx="-8" cy="-12" r="7.5" fill="#E8A050"/><circle cx="-8" cy="-12" r="5" fill="#F6C77E"/><ellipse cx="3" cy="-9" rx="9" ry="6" fill="#F6C77E"/><rect x="-3" y="-5" width="3" height="5" fill="#E0B06A"/><rect x="7" y="-5" width="3" height="5" fill="#E0B06A"/><circle cx="-9" cy="-13" r=".9" fill="#333"/>`,
+      hippo: `<ellipse cx="0" cy="-9" rx="14" ry="9" fill="#B9A6D6"/><ellipse cx="-13" cy="-8" rx="7" ry="6" fill="#C7B6E0"/><circle cx="-12" cy="-15" r="2" fill="#B9A6D6"/><circle cx="-12" cy="-12" r="1" fill="#333"/><rect x="-6" y="-2" width="4" height="3" fill="#A893C9"/><rect x="5" y="-2" width="4" height="3" fill="#A893C9"/>`,
+      rabbit: `<ellipse cx="0" cy="-6" rx="6" ry="5" fill="#F4EDE4"/><circle cx="-5" cy="-10" r="4" fill="#F4EDE4"/><ellipse cx="-6" cy="-17" rx="1.5" ry="4" fill="#F4EDE4"/><ellipse cx="-3" cy="-17" rx="1.5" ry="4" fill="#F4EDE4"/><circle cx="-6" cy="-11" r=".8" fill="#333"/>`
+    }[kind];
+    return `<g transform="translate(${x} ${y}) scale(${s})">${k}</g>`;
+  };
+
+  const ART = {
+    light: () => `<rect width="${W}" height="${H}" fill="url(#gLight)"/>`,
+    sky: () => `<rect width="${W}" height="${H}" fill="url(#gSky)"/>
+      <g fill="#fff" opacity=".8"><ellipse cx="120" cy="150" rx="34" ry="11"/><ellipse cx="140" cy="143" rx="20" ry="10"/>
+      <ellipse cx="235" cy="105" rx="28" ry="9"/><ellipse cx="250" cy="99" rx="16" ry="8"/></g>`,
+    sea: () => `<path d="M0,248 Q45,240 90,248 T180,248 T270,248 T360,248 L360,350 L0,350 Z" fill="url(#gSea)"/>
+      <g stroke="#fff" stroke-width="2" fill="none" opacity=".55" stroke-linecap="round">
+        <path d="M20,268 q10,-5 20,0"/><path d="M110,285 q10,-5 20,0"/><path d="M190,265 q10,-5 20,0"/><path d="M60,315 q10,-5 20,0"/><path d="M160,320 q10,-5 20,0"/></g>`,
+    land: () => `<path d="M222,348 Q262,250 300,188 Q312,180 322,192 Q352,250 380,348 Z" fill="#A9BC93"/>
+      <path d="M300,188 Q312,180 322,192 L330,206 Q318,200 312,208 Q304,200 293,204 Z" fill="#FFFFFF" opacity=".85"/>
+      <path d="M262,300 Q290,270 318,300" stroke="#94A97E" stroke-width="3" fill="none" opacity=".6"/>
+      <path d="M0,480 L0,342 Q50,330 100,340 T200,338 T300,344 T360,338 L360,480 Z" fill="url(#gLand)"/>
+      <g fill="#C6E5A0" opacity=".7"><ellipse cx="60" cy="372" rx="40" ry="8"/><ellipse cx="250" cy="420" rx="50" ry="9"/><ellipse cx="160" cy="455" rx="45" ry="8"/></g>`,
+    sun: () => `<g><circle cx="305" cy="62" r="42" fill="#FFE9A8" opacity=".55"/><circle cx="305" cy="62" r="27" fill="#FFD36E"/>
+      <circle cx="297" cy="58" r="2.2" fill="#8A5A2B"/><circle cx="313" cy="58" r="2.2" fill="#8A5A2B"/>
+      <path d="M296,67 Q305,75 314,67" stroke="#8A5A2B" stroke-width="2" fill="none" stroke-linecap="round"/>
+      <circle cx="292" cy="66" r="3" fill="#FFB4A2" opacity=".7"/><circle cx="318" cy="66" r="3" fill="#FFB4A2" opacity=".7"/></g>`,
+    moon: () => `<path d="M46,30 a17,17 0 1,0 14,28 a13,13 0 1,1 -14,-28 Z" fill="#FFF4C7" opacity=".95"/>`,
+    stars: () => [[90, 30], [150, 55], [200, 22], [245, 50], [30, 110], [175, 100], [350, 130], [120, 120]]
+      .map(([x, y], i) => `<path d="M${x},${y - 5} L${x + 1.5},${y - 1.5} L${x + 5},${y} L${x + 1.5},${y + 1.5} L${x},${y + 5} L${x - 1.5},${y + 1.5} L${x - 5},${y} L${x - 1.5},${y - 1.5} Z" fill="#FFF7C2" opacity="${.6 + (i % 3) * .15}"/>`).join(''),
+    plants: () => tree(178, 378, 13, '#8FD18A', '#A8DFA0') + tree(345, 448, 12, '#8FD18A', '#B5E3A8') + tree(232, 468, 10, '#9ED89A', '#B9E6AE') +
+      [[160, 405], [210, 380], [300, 470], [20, 470], [120, 470], [330, 400]].map(([x, y]) => `<path d="M${x - 5},${y} q2,-8 3,0 q1,-10 3,0 q2,-7 3,0" stroke="#6CBF6A" stroke-width="2" fill="none" stroke-linecap="round"/>`).join('') +
+      [[190, 425, '#FFB4C6'], [255, 455, '#FFE08A'], [140, 445, '#C9B6FF']].map(([x, y, c]) => `<circle cx="${x}" cy="${y}" r="3" fill="${c}"/><circle cx="${x}" cy="${y}" r="1.2" fill="#fff"/>`).join(''),
+    fish: () => [[60, 300, '#FF9F8A'], [150, 318, '#FFD36E'], [200, 280, '#9CD4F5']].map(([x, y, c]) =>
+      `<g><ellipse cx="${x}" cy="${y}" rx="9" ry="5" fill="${c}"/><path d="M${x + 8},${y} l7,-5 v10 Z" fill="${c}"/><circle cx="${x - 4}" cy="${y - 1}" r="1.2" fill="#333"/></g>`).join(''),
+    birds: () => [[110, 92, 1], [135, 80, .8], [205, 118, .9]].map(([x, y, s]) =>
+      `<path d="M${x - 9 * s},${y} q${5 * s},${-6 * s} ${9 * s},0 q${4 * s},${-6 * s} ${9 * s},0" stroke="#6B7A8F" stroke-width="2" fill="none" stroke-linecap="round"/>`).join(''),
+    animals: () => sheep(28, 462, 1) + animal(70, 470, 'rabbit', 1),
+    river: () => `<path d="M62,343 Q40,380 75,405 T95,480" stroke="#8FCFEA" stroke-width="11" fill="none" stroke-linecap="round"/>
+      <path d="M62,343 Q40,380 75,405 T95,480" stroke="#fff" stroke-width="2" fill="none" opacity=".5" stroke-dasharray="6 10"/>`,
+    edenTrees: () => tree(36, 400, 25, '#7CCB8A', '#9EDBA3') + tree(108, 396, 23, '#86C77C', '#A6D995') +
+      [[100, 372], [117, 380], [96, 388], [122, 365]].map(([x, y]) => `<circle cx="${x}" cy="${y}" r="3.2" fill="#F26B6B"/>`).join('') +
+      `<circle cx="30" cy="370" r="3" fill="#FFE08A"/><circle cx="45" cy="380" r="3" fill="#FFE08A"/>`,
+    gate: () => `<g><path d="M140,352 V480" stroke="#C9A27A" stroke-width="4" stroke-dasharray="3 7"/>
+      <path d="M131,470 V425 Q140,412 149,425 V470" fill="none" stroke="#C9A27A" stroke-width="4"/>
+      <rect id="doorL" class="door" x="131" y="426" width="9" height="44" fill="#D9B48C" stroke="#B08560" stroke-width="1"/>
+      <rect id="doorR" class="door" x="140" y="426" width="9" height="44" fill="#D9B48C" stroke="#B08560" stroke-width="1"/>
+      <g id="gateGlow"><circle cx="140" cy="414" r="7" fill="#FFE8A3"/><path d="M140,402 v-8 M133,407 l-5,-5 M147,407 l5,-5" stroke="#FFC94D" stroke-width="2" stroke-linecap="round"/></g></g>`,
+    people: () => `<g id="peopleMove">${person(78, 458, '#9EC9F0')}${person(96, 458, '#FFB4C6', .95, '<path d="M-6,-24 Q0,-30 6,-24" stroke="#8A5A2B" stroke-width="2.5" fill="none"/>')}</g>`,
+    hippo: () => animal(118, 466, 'hippo', .9),
+    snake: () => `<path d="M104,412 q-8,-6 0,-12 q8,-6 0,-12 q-8,-6 2,-12" stroke="#6CBF6A" stroke-width="5" fill="none" stroke-linecap="round"/>
+      <circle cx="107" cy="375" r="4.5" fill="#6CBF6A"/><circle cx="108.5" cy="374" r="1" fill="#333"/><path d="M111,377 l4,1 m-4,-1 l4,-1" stroke="#E64980" stroke-width="1"/>`,
+    fruit: () => `<g><circle cx="96" cy="430" r="4.5" fill="#F26B6B"/><path d="M96,425 q1,-3 3,-4" stroke="#6B8E23" stroke-width="1.5" fill="none"/><path d="M90,421 q4,-2 4,2" stroke="#fff" stroke-width="1" opacity=".7" fill="none"/></g>`,
+    altars: () => `<g><rect x="248" y="418" width="36" height="20" rx="6" fill="#C9C4BD"/><rect x="252" y="414" width="28" height="6" rx="3" fill="#DAD5CE"/>
+      ${sheep(266, 414, .8)}
+      <rect x="306" y="418" width="36" height="20" rx="6" fill="#C9C4BD"/><rect x="310" y="414" width="28" height="6" rx="3" fill="#DAD5CE"/>
+      <g stroke="#E0B04A" stroke-width="2" stroke-linecap="round"><path d="M318,414 l-3,-12"/><path d="M324,414 v-14"/><path d="M330,414 l3,-12"/></g>
+      <g fill="#F2C94C"><ellipse cx="315" cy="400" rx="2" ry="3.5"/><ellipse cx="324" cy="398" rx="2" ry="3.5"/><ellipse cx="333" cy="400" rx="2" ry="3.5"/></g>
+      ${person(232, 445, '#A7D3A6', .85)}${person(358, 445, '#E8B77A', .85)}</g>`,
+    flame: () => `<g class="flame-f"><path d="M266,405 Q252,392 262,376 Q264,386 270,382 Q268,372 276,366 Q284,388 272,405 Z" fill="#FFB347"/>
+      <path d="M267,404 Q261,396 266,388 Q268,394 271,392 Q274,398 270,404 Z" fill="#FFE08A"/></g>`,
+    family: () => ['#9EC9F0', '#FFB4C6', '#A7D3A6', '#FFD36E', '#C9B6FF', '#9EC9F0', '#FFB4A2', '#A7D3A6']
+      .map((c, i) => person(162 + i * 25, 476, c, .62 + (i % 2) * .06)).join(''),
+    cake: () => `<g><rect x="192" y="410" width="30" height="16" rx="4" fill="#FFD6E0"/><rect x="192" y="410" width="30" height="5" rx="2.5" fill="#fff"/>
+      <g stroke="#FFC94D" stroke-width="2"><path d="M198,410 v-7"/><path d="M207,410 v-7"/><path d="M216,410 v-7"/></g>
+      <g fill="#FF8C42"><ellipse cx="198" cy="401" rx="1.6" ry="2.6"/><ellipse cx="207" cy="401" rx="1.6" ry="2.6"/><ellipse cx="216" cy="401" rx="1.6" ry="2.6"/></g>
+      <rect x="194" y="386" width="26" height="11" rx="5" fill="#fff" stroke="#FF8FAB" stroke-width="1"/>
+      <text x="207" y="392" text-anchor="middle" dominant-baseline="central" font-size="8.5" font-weight="800" fill="#E64980">969</text></g>`,
+    ark: () => `<g id="arkMove"><g id="arkBob">
+      <g id="arkRibs" stroke="#A47551" stroke-width="3" stroke-linecap="round" fill="none">
+        <path d="M140,330 L250,330 L238,360 L152,360 Z" stroke-dasharray="4 3"/>
+        <path d="M155,330 v28 M170,330 v30 M185,330 v30 M200,330 v30 M215,330 v30 M230,330 v28"/></g>
+      <g id="arkHull">
+        <path d="M136,328 L254,328 L240,362 L150,362 Z" fill="#B07A4F"/>
+        <path d="M142,338 H248 M146,348 H244" stroke="#8E5E3B" stroke-width="2"/>
+        <rect x="160" y="304" width="70" height="26" rx="3" fill="#D8A878"/>
+        <path d="M154,306 L195,288 L236,306 Z" fill="#9C5B3B"/>
+        <rect x="170" y="311" width="9" height="8" rx="2" fill="#6E452A"/><rect x="190" y="311" width="9" height="8" rx="2" fill="#6E452A"/><rect x="210" y="311" width="9" height="8" rx="2" fill="#6E452A"/>
+        <rect x="218" y="318" width="10" height="12" rx="2" fill="#6E452A"/>
+        <path d="M197,290 L193,276" stroke="#F7C96B" stroke-width="4" stroke-linecap="round"/><ellipse cx="192" cy="273" rx="3.5" ry="2.8" fill="#F7C96B"/>
+      </g></g></g>`,
+    noah: () => `<g>${person(258, 382, '#C3B091', 1.1, '<path d="M-5,-17 Q0,-8 5,-17" fill="#EEE" />')}
+      <g id="hammer"><path d="M266,368 l10,-12" stroke="#8E5E3B" stroke-width="2.5" stroke-linecap="round"/><rect x="272" y="350" width="10" height="6" rx="1.5" fill="#8A8F98" transform="rotate(-50 277 353)"/></g></g>`,
+    pairs: () => animal(244, 372, 'elephant', .8) + animal(266, 374, 'elephant', .7) + animal(292, 380, 'giraffe', .75) + animal(310, 382, 'giraffe', .7) +
+      animal(332, 386, 'lion', .8) + animal(352, 388, 'lion', .75),
+    rain: () => `<g id="rainDrops" stroke="#E7F5FF" stroke-width="1.6" stroke-linecap="round" opacity=".85">` +
+      Array.from({ length: 46 }, (_, i) => { const x = (i * 37) % 360, y = (i * 53) % 260 - 30; return `<path d="M${x},${y} l-4,12"/>`; }).join('') + `</g>
+      <g fill="#C5CFDB"><ellipse cx="80" cy="40" rx="60" ry="22"/><ellipse cx="150" cy="30" rx="50" ry="22"/><ellipse cx="250" cy="38" rx="70" ry="24"/><ellipse cx="330" cy="30" rx="40" ry="20"/></g>`,
+    dove: () => `<g><ellipse cx="262" cy="150" rx="11" ry="7" fill="#fff"/><circle cx="252" cy="146" r="5" fill="#fff"/>
+      <path d="M262,148 q8,-16 20,-14 q-6,8 -10,16 Z" fill="#F1F3F5"/><path d="M247,146 l-5,1.5 l5,1.5" fill="#FFB347"/><circle cx="251" cy="145" r=".9" fill="#333"/>
+      <path d="M244,149 q-6,4 -10,3" stroke="#6B8E23" stroke-width="1.8" fill="none"/><ellipse cx="236" cy="152" rx="4" ry="2" fill="#7CB342" transform="rotate(-20 236 152)"/></g>`,
+    rainbow: () => `<g id="rainbowArcs" fill="none" stroke-width="10" opacity=".8">` +
+      ['#FFA8A8', '#FFC078', '#FFE066', '#8CE99A', '#74C0FC', '#B197FC'].map((c, i) => `<path d="M${-10 + i * 10},340 A${190 - i * 10},${190 - i * 10} 0 0 1 ${370 - i * 10},340" stroke="${c}"/>`).join('') + `</g>`,
+    noahFamily: () => person(250, 392, '#C3B091', 1.05, '<path d="M-5,-17 Q0,-8 5,-17" fill="#EEE"/>') + person(266, 394, '#FFB4C6', .95) +
+      person(284, 392, '#9EC9F0', .9) + person(300, 394, '#A7D3A6', .9) + sheep(322, 398, .8) + animal(345, 400, 'rabbit', .9),
+    villages: () => house(32, 430, '#FFE3C2', '#E8836E') + house(58, 438, '#FFF0D6', '#7FB5E0') + house(44, 456, '#FFE8F0', '#A98BD9') +
+      house(190, 448, '#FFF0D6', '#E8836E') + house(216, 456, '#FFE3C2', '#86C77C') +
+      house(300, 458, '#FFE8F0', '#7FB5E0') + house(328, 452, '#FFF0D6', '#E8A85C') + house(348, 470, '#FFE3C2', '#A98BD9'),
+    walkers: () => `<g stroke="#C9A27A" stroke-width="2" stroke-dasharray="2 5" fill="none" stroke-linecap="round">
+        <path d="M250,402 Q170,395 75,430"/><path d="M262,404 Q240,430 210,445"/><path d="M285,404 Q310,420 318,445"/></g>` +
+      person(150, 410, '#9EC9F0', .7) + person(228, 432, '#FFD36E', .7) + person(306, 428, '#C9B6FF', .7),
+    tower: () => `<g id="towerBody">` + [[430, 70], [392, 62], [356, 54], [322, 46], [290, 38], [260, 30]].map(([y, w], i) =>
+      `<g class="tier" style="animation-delay:calc(${i * .22}s * var(--spd))"><rect x="${120 - w / 2}" y="${y - 36}" width="${w}" height="36" rx="3" fill="${i % 2 ? '#E7C9A0' : '#DDB98C'}"/>
+       <path d="M${122 - w / 2},${y - 24} H${118 + w / 2} M${122 - w / 2},${y - 12} H${118 + w / 2}" stroke="#C49A6C" stroke-width="1.2"/>
+       <rect x="${116}" y="${y - 30}" width="8" height="10" rx="4" fill="#9C6B43"/></g>`).join('') +
+      `<g id="towerTop" class="tier" style="animation-delay:calc(1.32s * var(--spd))"><rect x="108" y="200" width="24" height="24" rx="3" fill="#EBD3B0"/>
+       <path d="M132,206 l18,-8 l0,30" stroke="#8A8F98" stroke-width="2" fill="none"/><rect x="146" y="226" width="7" height="6" fill="#DDB98C"/></g></g>`,
+    builders: () => `<g id="bld1" class="bld">${person(96, 438, '#9EC9F0', .75)}</g><g id="bld2" class="bld">${person(150, 440, '#FFD36E', .75)}</g>
+      <g id="bld3" class="bld">${person(112, 452, '#C9B6FF', .7)}</g><g id="bld4" class="bld">${person(134, 454, '#A7D3A6', .7)}</g>`
+  };
+
+  // 그리는 순서 (아래 → 위)
+  const ORDER = ['light', 'sky', 'rainbow', 'stars', 'moon', 'sun', 'birds', 'sea', 'fish', 'land', 'plants', 'river', 'edenTrees', 'gate',
+    'snake', 'animals', 'hippo', 'people', 'fruit', 'altars', 'flame', 'cake', 'family', 'villages', 'walkers', 'tower', 'builders',
+    'noahFamily', 'noah', 'pairs', 'dove', 'ark', 'rain'];
+  // 물은 'ark' 바로 아래에 끼운다 (방주는 물 위에 뜬다)
+  const WATER_BEFORE = 'dove';
+
+  // 레이어 → 장 연결
+  const LAYERS = {};
+  BOOK.chapters.forEach(c => c.layers.forEach(l => { LAYERS[l.art] = Object.assign({ chapter: c.chapter }, l); }));
+
+  // 말풍선 위치 (누가 말하는지)
+  function anchor(who, f) {
+    switch (who) {
+      case 'sun': return [300, 92, 'down'];
+      case 'adam': return f.gateClosed ? [178, 430] : [86, 430];
+      case 'snake': return [108, 368];
+      case 'abel': return [266, 364];
+      case 'grandpa': return [207, 384];
+      case 'noah': return [258, 352];
+      case 'giraffe': return f.flood ? [192, 82] : [192, 270];
+      case 'dove': return [256, 138];
+      case 'noahOut': return [266, 362];
+      case 'kid': return [228, 404];
+      case 'worker1': return [120, 196];
+      case 'worker2': return [150, 412];
+      default: return [180, 200];
+    }
+  }
+
+  // ---------- 상태 계산 ----------
+  function flagsOf(S, exceptCh) {
+    const f = { ark: null };
+    ALL.forEach(ch => { if (S.has(ch) && ch !== exceptCh && CH[ch].set) Object.assign(f, CH[ch].set); });
+    return f;
+  }
+  function layerOn(l, S, f) {
+    if (!S.has(l.chapter)) return false;
+    if (l.transient) return false;
+    if (l.showIf && !f[l.showIf]) return false;
+    if (l.hideIf && f[l.hideIf]) return false;
+    return true;
+  }
+
+  // ---------- 그리기 ----------
+  let svg, G = {}, bubbleG, hintG, cur = { S: new Set() };
+  function el(tag, a) { const e = document.createElementNS(NS, tag); for (const k in a) e.setAttribute(k, a[k]); return e; }
+  function artHTML(name) {
+    const src = BOOK.ASSETS && BOOK.ASSETS[name];
+    if (src) { const b = ART_BOX[name] || [0, 0, W, H]; return `<image href="${src}" x="${b[0]}" y="${b[1]}" width="${b[2]}" height="${b[3]}" preserveAspectRatio="xMidYMid meet"/>`; }
+    return ART[name] ? ART[name]() : '';
+  }
+
+  function build() {
+    const stage = $('scStage');
+    if (svg) svg.remove();
+    svg = el('svg', { class: 'sc-svg', viewBox: `0 0 ${W} ${H}`, role: 'img', 'aria-label': `${BOOK.title} 장면판` });
+    svg.innerHTML = `<defs>
+      <radialGradient id="gLight" cx="50%" cy="25%" r="80%"><stop offset="0" stop-color="#FFF9DB"/><stop offset=".5" stop-color="#FFE8A3"/><stop offset="1" stop-color="#F7C873"/></radialGradient>
+      <linearGradient id="gSky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#A5D8F3"/><stop offset=".45" stop-color="#D3ECF8"/><stop offset=".6" stop-color="#FDF3E1"/></linearGradient>
+      <linearGradient id="gSea" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#8CD0EA"/><stop offset="1" stop-color="#5AA9D6"/></linearGradient>
+      <linearGradient id="gLand" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#BFE3A0"/><stop offset="1" stop-color="#93CB78"/></linearGradient>
+      <linearGradient id="gWater" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#7DBCE3" stop-opacity=".95"/><stop offset="1" stop-color="#3F7FB4"/></linearGradient>
+      <radialGradient id="gChaos" cx="50%" cy="55%" r="70%"><stop offset="0" stop-color="#1F2A4D"/><stop offset="1" stop-color="#0B1022"/></radialGradient>
+      <filter id="paper" x="0" y="0" width="100%" height="100%"><feTurbulence type="fractalNoise" baseFrequency=".9" numOctaves="2" seed="3"/>
+        <feColorMatrix values="0 0 0 0 .45  0 0 0 0 .38  0 0 0 0 .3  0 0 0 .5 0"/></filter>
+      <clipPath id="board"><rect width="${W}" height="${H}" rx="14"/></clipPath>
+    </defs>`;
+    const root = el('g', { 'clip-path': 'url(#board)' });
+    root.innerHTML = `<rect width="${W}" height="${H}" fill="url(#gChaos)"/>
+      <g opacity=".35" fill="none" stroke="#3B4A7A" stroke-width="2"><path d="M20,300 q60,-30 120,0 t120,0 t120,0"/><path d="M-20,350 q60,-30 120,0 t120,0 t120,0"/><path d="M10,400 q60,-30 120,0 t120,0 t120,0"/></g>`;
+    G = {};
+    ORDER.forEach(name => {
+      if (name === WATER_BEFORE) {
+        const w = el('g', { id: 'water' });
+        w.innerHTML = `<rect x="0" y="150" width="${W}" height="340" fill="url(#gWater)"/>
+          <path d="M0,152 q30,-8 60,0 t60,0 t60,0 t60,0 t60,0 t60,0" stroke="#fff" stroke-width="2.5" fill="none" opacity=".6"/>`;
+        root.appendChild(w);
+      }
+      const g = el('g', { class: 'L', 'data-art': name });
+      const a = el('g', { class: 'A' });
+      a.innerHTML = artHTML(name);
+      g.appendChild(a);
+      root.appendChild(g);
+      G[name] = g;
+    });
+    root.appendChild(el('rect', { width: W, height: H, filter: 'url(#paper)', opacity: .12, 'pointer-events': 'none' }));
+    root.appendChild(el('rect', { id: 'flash', width: W, height: H, fill: '#FFFDF0' }));
+    hintG = el('g', {}); root.appendChild(hintG);
+    bubbleG = el('g', {}); root.appendChild(bubbleG);
+    const intro = el('text', { id: 'introText', x: W / 2, y: 225, 'text-anchor': 'middle', fill: '#DDE4FF', 'font-size': 16, 'font-weight': 700 });
+    intro.textContent = BOOK.intro;
+    root.appendChild(intro);
+    svg.appendChild(root);
+    stage.insertBefore(svg, stage.firstChild);
+    fit();
+  }
+
+  // 장면을 S 상태로 맞춘다. animCh가 있으면 그 장의 변화를 애니메이션으로 보여 준다.
+  function apply(S, animCh, opts = {}) {
+    cur.S = new Set(S);
+    clearTimers();
+    bubbleG.innerHTML = '';
+    if (opts.instant) svg.classList.add('no-tr');
+    const finalF = flagsOf(S);
+    const preF = animCh ? flagsOf(S, animCh) : finalF;
+    setFlags(preF, S);
+    ORDER.forEach(name => {
+      const g = G[name], l = LAYERS[name];
+      g.classList.remove(...[...g.classList].filter(c => c.indexOf('a-') === 0));
+      if (!l) { g.classList.remove('on'); return; }
+      if (animCh && l.chapter === animCh) {
+        const on = l.transient ? true : layerOn(l, S, finalF);
+        g.classList.toggle('on', on);
+        if (on) {
+          void g.getBoundingClientRect();
+          g.classList.add('a-' + (l.transient ? 'walkin' : (l.anim || 'fade')));
+          g.firstChild.style.animationDelay = `calc(${l.delay || 0}s * var(--spd))`;
+          if (l.transient) later(() => g.classList.remove('on'), ((l.delay || 0) + 1.8) * spd() * 1000);
+        }
+      } else {
+        g.classList.toggle('on', layerOn(l, S, preF));
+      }
+    });
+    if (animCh) {
+      const c = CH[animCh];
+      if (c.animation === 'highlight') { svg.classList.remove('flashing'); void svg.getBoundingClientRect(); svg.classList.add('flashing'); }
+      const sd = setDelayOf(c);
+      const finish = () => {
+        setFlags(finalF, S);
+        ORDER.forEach(name => { const l = LAYERS[name]; if (l && l.chapter !== animCh) G[name].classList.toggle('on', layerOn(l, S, finalF)); });
+      };
+      if (c.animation === 'babel') {
+        later(() => svg.classList.add('shake'), 1.9 * spd() * 1000);
+        later(() => svg.classList.remove('shake'), 2.7 * spd() * 1000);
+      }
+      if (sd > 0) later(finish, sd * spd() * 1000); else finish();
+    }
+    drawHint(S, !!animCh);
+    if (opts.instant) { void svg.getBoundingClientRect(); requestAnimationFrame(() => requestAnimationFrame(() => svg.classList.remove('no-tr'))); }
+  }
+  function setDelayOf(c) { return { 3: 1.1, 7: 1.9, 8: 0.3, 11: 2.8 }[c.chapter] || 0; }
+  function stepSeconds(ch) {
+    const c = CH[ch];
+    let t = Math.max(...c.layers.map(l => (l.delay || 0) + (l.transient ? 1.8 : 1)));
+    if (c.set) t = Math.max(t, setDelayOf(c) + ((c.set.flood !== undefined || c.set.gateClosed) ? 2.6 : 1));
+    return t + .4;
+  }
+  function setFlags(f, S) {
+    const cl = svg.classList;
+    ['f-flood', 'f-afterFlood', 'f-gateClosed', 'f-scattered', 'f-oldWorldGone', 'ark-frame', 'ark-done', 'ark-rest', 'f-empty'].forEach(c => cl.remove(c));
+    ['flood', 'afterFlood', 'gateClosed', 'scattered', 'oldWorldGone'].forEach(k => { if (f[k]) cl.add('f-' + k); });
+    if (f.ark) cl.add('ark-' + f.ark);
+    if (S.size === 0) cl.add('f-empty');
+  }
+
+  let timers = [];
+  function later(fn, ms) { timers.push(setTimeout(fn, reduced() ? 0 : ms)); }
+  function clearTimers() { timers.forEach(clearTimeout); timers = []; }
+  function spd() { return parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--spd')) || 1; }
+  function setSpd(v) { document.documentElement.style.setProperty('--spd', v); }
+
+  // 다음에 바뀔 자리 예고 (반짝이는 ?)
+  function drawHint(S, delayed) {
+    hintG.innerHTML = '';
+    const next = ALL.find(ch => !S.has(ch));
+    if (!next || !CH[next].hintAt || svg.classList.contains('ending')) return;
+    const { x, y } = CH[next].hintAt;
+    const g = el('g', { class: 'hintq', style: delayed ? 'animation-delay:2.5s;opacity:0' : '' });
+    g.innerHTML = `<circle cx="${x}" cy="${y}" r="15" fill="rgba(255,255,255,.55)" stroke="#FFE08A" stroke-width="2.5" stroke-dasharray="4 3"/>
+      <text x="${x}" y="${y + 1}" text-anchor="middle" dominant-baseline="central" font-size="17" font-weight="900" fill="#F59F00">?</text>`;
+    hintG.appendChild(g);
+  }
+
+  function textW(t) { let w = 0; for (const c of t) w += /[가-힣]/.test(c) ? 13 : /\s/.test(c) ? 4.5 : 8; return w; }
+  function bubble(who, text, f) {
+    const [ax, ay, dir] = anchor(who, f);
+    const w = textW(text) + 22, h = 28;
+    let bx = Math.max(6, Math.min(W - w - 6, ax - w / 2));
+    const by = dir === 'down' ? ay + 10 : ay - h - 12;
+    const tx = Math.max(bx + 12, Math.min(bx + w - 12, ax));
+    const g = el('g', { class: 'bubble' });
+    const tail = dir === 'down' ? `M${tx - 6},${by + 1} L${ax},${ay} L${tx + 6},${by + 1}` : `M${tx - 6},${by + h - 1} L${ax},${ay} L${tx + 6},${by + h - 1}`;
+    g.innerHTML = `<path d="${tail}" fill="#fff" stroke="#1D3557" stroke-width="1.6" stroke-linejoin="round"/>
+      <rect x="${bx}" y="${by}" width="${w}" height="${h}" rx="14" fill="#fff" stroke="#1D3557" stroke-width="1.6"/>
+      <path d="${dir === 'down' ? `M${tx - 5},${by + 1.6} H${tx + 5}` : `M${tx - 5},${by + h - 1.6} H${tx + 5}`}" stroke="#fff" stroke-width="3"/>
+      <text x="${bx + w / 2}" y="${by + h / 2 + 1}">${text}</text>`;
+    bubbleG.appendChild(g);
+    return g;
+  }
+  function speak(ch, delaySec) {
+    const sp = [].concat(CH[ch].speech || []);
+    const f = flagsOf(cur.S);
+    sp.forEach((s, i) => later(() => { if (i === 0) bubbleG.innerHTML = ''; bubble(s.who, s.text, f); }, (delaySec + i * 1.3) * spd() * 1000));
+  }
+
+  function fit() {
+    if (!svg) return;
+    const panel = $('scPanel'), stage = $('scStage');
+    const other = panel.offsetHeight - stage.offsetHeight;
+    const aw = Math.min(460, innerWidth - 20) - 20, ah = innerHeight - 20 - other;
+    const w = Math.max(220, Math.min(aw, ah * W / H));
+    svg.style.width = w + 'px'; svg.style.height = (w * H / W) + 'px';
+  }
+
+  // ---------- 보상 흐름 ----------
+  const st = { read: new Set(), seen: new Set(), view: 0, queue: [], busy: false, onSeen: null, playing: false };
+  const msg = h => { $('scMsg').innerHTML = h; };
+  const maxSeen = () => Math.max(0, ...[...st.seen]);
+  function viewSet(v) { return new Set([...st.seen].filter(ch => ch <= v)); }
+
+  function updateHead() {
+    $('scName').textContent = `${BOOK.icon} ${BOOK.title}`;
+    $('scSub').textContent = st.view === 0 ? `${BOOK.book} ${BOOK.from}–${BOOK.to}장 · 시작` : `${BOOK.book} ${st.view}장까지 보는 중`;
+    $('scCount').textContent = `${st.seen.size} / ${ALL.length}`;
+    $('scPrev').disabled = st.busy || st.view <= 0;
+    $('scNext').disabled = st.busy || st.view >= maxSeen();
+    $('scPlay').disabled = st.busy || st.seen.size === 0;
+    const q = $('scQuiz');
+    if (st.queue.length && !st.busy) { q.style.display = ''; q.textContent = `📖 ${st.queue[0]}장 퀴즈 풀기`; } else q.style.display = 'none';
+  }
+  function idleMsg() {
+    if (st.seen.size === 0) msg(`<span>${BOOK.intro}<br><small>창세기 1장을 읽으면 빛이 켜져요!</small></span>`);
+    else if (st.seen.size === ALL.length) msg(`🏅 <b>${BOOK.ending.badge}</b>`);
+    else { const n = ALL.find(ch => !st.seen.has(ch)); msg(`<span>반짝이는 <b>?</b> 자리가 다음에 바뀌어요<br><small>${n}장을 읽으면 무슨 일이 생길까요?</small></span>`); }
+  }
+
+  function showQuiz(ch) {
+    const c = CH[ch], qz = c.quiz;
+    st.busy = true; updateHead();
+    // 퀴즈 전에는 이 장 바로 앞까지의 장면을 보여 준다
+    st.view = maxSeen(); apply(viewSet(st.view), null, { instant: true });
+    msg(`<span>📖 <b>${ch}장 ${c.title}</b>을 읽었어요!<br><small>퀴즈를 맞히면 장면이 바뀌어요</small></span>`);
+    $('quizQ').textContent = qz.q;
+    $('quizHint').textContent = '';
+    const box = $('quizOpts'); box.innerHTML = '';
+    qz.options.forEach((o, i) => {
+      const b = document.createElement('button');
+      b.className = 'quiz-opt';
+      b.innerHTML = `<span>${o.icon}</span>${o.text}`;
+      b.onclick = () => {
+        if (i === qz.answer) {
+          b.classList.add('right');
+          setTimeout(() => { $('quiz').classList.remove('show'); reveal(ch); }, 450);
+        } else {
+          b.classList.remove('wrong'); void b.offsetWidth; b.classList.add('wrong');
+          $('quizHint').textContent = '💡 ' + qz.hint + ' 다시 골라 볼까요?';
+        }
+      };
+      box.appendChild(b);
+    });
+    $('quiz').classList.add('show');
+  }
+
+  function reveal(ch) {
+    st.seen.add(ch);
+    if (st.onSeen) st.onSeen(ch);
+    st.view = ch;
+    setSpd(1);
+    apply(viewSet(ch), ch);
+    const t = stepSeconds(ch);
+    msg(`착! ✨ <b>${ch}장 ${CH[ch].title}</b>`);
+    speak(ch, Math.max(0.6, t - 1.2));
+    later(() => {
+      msg(`<span>착! ✨ <b>${ch}장 ${CH[ch].title}</b><br><small>${CH[ch].summary}</small></span>`);
+      st.busy = false;
+      if (st.seen.size === ALL.length) { later(ending, 1800); st.busy = true; }
+      updateHead();
+    }, (t + .8) * 1000);
+    st.queue = st.queue.filter(c => c !== ch);
+    updateHead();
+  }
+
+  // 0장부터 지금까지 차례로 재생
+  function play(speed, then) {
+    st.busy = true; st.playing = true; updateHead();
+    svg.classList.remove('ending'); $('badge').classList.remove('show');
+    setSpd(speed);
+    const chs = ALL.filter(ch => st.seen.has(ch));
+    st.view = 0; apply(new Set(), null, { instant: true }); updateHead();
+    msg(BOOK.intro);
+    let i = 0, acc = 900 * speed;
+    const runNext = () => {
+      if (i >= chs.length) { st.playing = false; setSpd(1); st.busy = false; st.view = maxSeen(); updateHead(); if (then) then(); else idleMsg(); return; }
+      const ch = chs[i++];
+      st.view = ch; updateHead();
+      apply(viewSet(ch), ch);
+      if (speed >= .6) speak(ch, Math.max(.4, stepSeconds(ch) - 1));
+      msg(`<b>${ch}장</b> ${CH[ch].title}`);
+      setTimeout(runNext, stepSeconds(ch) * speed * 1000 + (speed >= .6 ? 900 : 150));
+    };
+    setTimeout(runNext, reduced() ? 0 : acc);
+  }
+
+  function ending() {
+    msg('🎬 처음부터 빠르게 다시 볼까요?');
+    play(.35, () => {
+      st.busy = true; updateHead();
+      bubbleG.innerHTML = '';
+      svg.classList.add('ending');
+      hintG.innerHTML = '';
+      msg(`🌈 방주가 무지개 아래로 항해해요!`);
+      setTimeout(() => {
+        $('badgeTitle').textContent = BOOK.ending.badge;
+        $('badgeNext').textContent = `다음 장면판: ${BOOK.ending.next.title} (준비 중)`;
+        $('badge').classList.add('show');
+        msg(`🏅 <b>${BOOK.ending.badge}</b>`);
+        st.busy = false; updateHead();
+      }, reduced() ? 0 : 2600);
+    });
+  }
+
+  function open(o) {
+    st.read = new Set(o.read); st.seen = new Set([...o.seen].filter(c => st.read.has(c)));
+    st.onSeen = o.onSeen || null;
+    st.queue = ALL.filter(c => st.read.has(c) && !st.seen.has(c));
+    st.busy = false; st.playing = false;
+    $('scOv').classList.add('show'); $('scOv').setAttribute('aria-hidden', 'false');
+    $('quiz').classList.remove('show'); $('badge').classList.remove('show');
+    setSpd(1);
+    build();
+    st.view = maxSeen();
+    apply(viewSet(st.view), null, { instant: true });
+    if (st.seen.size === ALL.length && o.showEnding) { svg.classList.add('ending'); hintG.innerHTML = ''; }
+    updateHead(); idleMsg();
+    if (st.queue.length && o.startQuiz !== false) setTimeout(() => showQuiz(st.queue[0]), 500);
+  }
+  function close() { clearTimers(); $('scOv').classList.remove('show'); $('scOv').setAttribute('aria-hidden', 'true'); }
+
+  $('scClose').onclick = close;
+  $('scPrev').onclick = () => { if (st.busy || st.view <= 0) return; svg.classList.remove('ending'); st.view = [0, ...ALL.filter(c => st.seen.has(c) && c < st.view)].pop(); apply(viewSet(st.view), null); updateHead();
+    msg(st.view ? `<span>⏪ <b>${st.view}장</b> ${CH[st.view].title}<br><small>${CH[st.view].summary}</small></span>` : BOOK.intro); };
+  $('scNext').onclick = () => { if (st.busy) return; const n = ALL.find(c => st.seen.has(c) && c > st.view); if (!n) return; st.view = n; apply(viewSet(n), n); speak(n, Math.max(.6, stepSeconds(n) - 1.2)); updateHead();
+    msg(`<span>⏩ <b>${n}장</b> ${CH[n].title}<br><small>${CH[n].summary}</small></span>`); };
+  $('scPlay').onclick = () => { if (!st.busy) play(.6); };
+  $('scQuiz').onclick = () => { if (st.queue.length && !st.busy) showQuiz(st.queue[0]); };
+  $('badgeClose').onclick = () => { $('badge').classList.remove('show'); idleMsg(); };
+  addEventListener('resize', fit);
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && $('scOv').classList.contains('show')) close(); });
+
+  window.SceneBoard = { open, close, ALL };
+})();
+
+// ============================================================
+// 시범 화면 + 개발용 컨트롤
+// ============================================================
+(function () {
+  const { ALL } = window.SceneBoard;
+  const LS_R = 'skDemoRead', LS_P = 'skDemoPlaced';   // 스티커판 시범과 같은 진행도
+  const load = k => { try { return new Set(JSON.parse(localStorage.getItem(k) || '[]')); } catch (e) { return new Set(); } };
+  const save = (k, s) => { try { localStorage.setItem(k, JSON.stringify([...s])); } catch (e) {} };
+  let read = load(LS_R), seen = load(LS_P);
+  const $ = id => document.getElementById(id);
+  let tt;
+  const toast = t => { const e = $('toast'); e.textContent = t; e.classList.add('show'); clearTimeout(tt); tt = setTimeout(() => e.classList.remove('show'), 2200); };
+
+  function render() {
+    const grid = $('grid'); grid.innerHTML = '';
+    ALL.forEach(c => {
+      const b = document.createElement('button');
+      b.className = 'ch' + (read.has(c) ? ' read' : '') + (read.has(c) && !seen.has(c) ? ' wait' : '');
+      b.textContent = c; b.onclick = () => onCh(c); grid.appendChild(b);
+    });
+    $('prog').textContent = `✨ ${ALL.filter(c => seen.has(c)).length} / ${ALL.length}`;
+  }
+  const openBoard = (extra = {}) => window.SceneBoard.open(Object.assign({ read, seen, onSeen(c) { seen.add(c); save(LS_P, seen); render(); } }, extra));
+  function onCh(c) {
+    if (read.has(c)) { read.delete(c); seen.delete(c); save(LS_R, read); save(LS_P, seen); render(); toast(`${c}장 읽음을 취소했어요`); return; }
+    read.add(c); save(LS_R, read); render(); openBoard();
+  }
+  function setN(n) {
+    read = new Set(ALL.filter(c => c <= n)); seen = new Set(read);
+    save(LS_R, read); save(LS_P, seen); render();
+  }
+  $('bOpen').onclick = () => openBoard();
+  $('dbgN').oninput = e => { $('dbgV').textContent = e.target.value; };
+  $('dbgGo').onclick = () => { setN(Number($('dbgN').value)); openBoard({ startQuiz: false }); };
+  $('dbgNext').onclick = () => { const n = ALL.find(c => !read.has(c)); if (!n) { toast('11장까지 다 읽었어요!'); return; } read.add(n); save(LS_R, read); render(); openBoard(); };
+  let armed = false, at;
+  $('bReset').onclick = () => {
+    if (!armed) { armed = true; $('bReset').textContent = '정말 지울까요? 한 번 더'; at = setTimeout(() => { armed = false; $('bReset').textContent = '↺ 처음부터'; }, 3000); return; }
+    clearTimeout(at); armed = false; $('bReset').textContent = '↺ 처음부터'; setN(0); toast('처음 상태로 돌렸어요');
+  };
+  render();
+
+  // ?n=7 → 7장까지 읽은 장면판을 바로 연다 (&end=1 이면 완성 장면)
+  const qs = new URLSearchParams(location.search);
+  if (qs.has('n')) {
+    const n = Math.max(0, Math.min(ALL.length, parseInt(qs.get('n'), 10) || 0));
+    $('dbgN').value = n; $('dbgV').textContent = n;
+    setN(n);
+    // &q=1 → 다음 장을 읽은 상태로 열어 퀴즈부터 보여 준다
+    if (qs.get('q') === '1' && n < ALL.length) {
+      read.add(n + 1); save(LS_R, read); render(); openBoard();
+      // &auto=1 → (개발용) 1초 뒤 정답을 자동으로 눌러 보상 장면까지 진행
+      if (qs.get('auto') === '1') setTimeout(() => { const o = document.querySelectorAll('.quiz-opt'); if (o[0]) o[0].click(); }, 1200);
+    }
+    else openBoard({ startQuiz: false, showEnding: qs.get('end') === '1' });
+  }
+})();
+</script>
+</body>
+</html>
