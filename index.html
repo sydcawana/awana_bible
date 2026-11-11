@@ -760,7 +760,8 @@
               <i class="fa-solid fa-chart-pie me-1"></i>통계
             </button>
           </div>
-          <div>
+          <div class="d-flex gap-1">
+            <button class="btn btn-outline-secondary btn-sm" id="soundToggleBtn" onclick="toggleSound()" title="효과음 켜기/끄기"><i class="fa-solid fa-volume-high"></i></button>
             <button class="btn btn-outline-danger btn-sm" onclick="confirmLogout()"><i class="fa-solid fa-right-from-bracket"></i></button>
           </div>
         </div>
@@ -1598,6 +1599,7 @@
 
       document.getElementById('authSection').style.display = 'none';
       document.getElementById('userMainSection').style.display = 'block';
+      updateSoundButton();
       
       const dispGroup = document.getElementById('dispGroup');
       dispGroup.innerText = user.group;
@@ -2113,13 +2115,106 @@
       // 최종적으로 resolveFlushCallbacks()를 호출해 callback이 실행된다.
     }
 
+    // ===== 효과음 (소리 파일 없이 브라우저에서 바로 만든다) =====
+    let sfxCtx = null;
+    let soundOn = true;
+    try { soundOn = localStorage.getItem('otngSound') !== 'off'; } catch (e) {}
+
+    function sfxReady() {
+      if (!soundOn) return null;
+      try {
+        if (!sfxCtx) {
+          const AC = window.AudioContext || window.webkitAudioContext;
+          if (!AC) return null;
+          sfxCtx = new AC();
+        }
+        if (sfxCtx.state === 'suspended') sfxCtx.resume();
+        return sfxCtx;
+      } catch (e) { return null; }
+    }
+
+    // 실로폰 같은 음 하나: freq(Hz), start(초 뒤), dur(길이), vol(크기)
+    function sfxNote(ctx, freq, start, dur, vol, type) {
+      const t = ctx.currentTime + start;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = type || 'triangle';
+      osc.frequency.setValueAtTime(freq, t);
+      gain.gain.setValueAtTime(0.0001, t);
+      gain.gain.exponentialRampToValueAtTime(vol, t + 0.01);
+      gain.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+      osc.connect(gain).connect(ctx.destination);
+      osc.start(t);
+      osc.stop(t + dur + 0.05);
+    }
+
+    function playSound(kind) {
+      const ctx = sfxReady();
+      if (!ctx) return;
+      try {
+        if (kind === 'check') {
+          // 한 장 읽음: 짧고 경쾌한 "띠링"
+          sfxNote(ctx, 1046.5, 0, 0.18, 0.18);
+          sfxNote(ctx, 1568.0, 0.07, 0.28, 0.16);
+        } else if (kind === 'uncheck') {
+          // 체크 해제: 작고 낮은 "톡"
+          sfxNote(ctx, 392.0, 0, 0.12, 0.08, 'sine');
+        } else if (kind === 'book') {
+          // 성경 한 권 완독: 올라가는 팡파레 + 반짝이는 화음
+          [523.25, 659.25, 783.99, 1046.5].forEach((f, i) => sfxNote(ctx, f, i * 0.09, 0.35, 0.16));
+          [1046.5, 1318.5, 1568.0].forEach(f => sfxNote(ctx, f, 0.4, 1.1, 0.09));
+          [2093.0, 2637.0, 3136.0, 2637.0, 3520.0].forEach((f, i) => sfxNote(ctx, f, 0.45 + i * 0.07, 0.25, 0.04, 'sine'));
+        } else if (kind === 'pin') {
+          // 핀 획득(구약/신약 등 큰 묶음 완독): 더 길고 화려한 팡파레
+          [392.0, 523.25, 659.25, 783.99].forEach((f, i) => sfxNote(ctx, f, i * 0.11, 0.3, 0.16));
+          [523.25, 659.25, 783.99].forEach(f => sfxNote(ctx, f, 0.5, 0.25, 0.12));
+          [587.33, 739.99, 880.0].forEach(f => sfxNote(ctx, f, 0.75, 0.25, 0.12));
+          [523.25, 659.25, 783.99, 1046.5].forEach(f => sfxNote(ctx, f, 1.0, 1.6, 0.11));
+          for (let i = 0; i < 8; i++) sfxNote(ctx, [2093.0, 2637.0, 3136.0, 3520.0][i % 4], 1.05 + i * 0.08, 0.3, 0.035, 'sine');
+        }
+      } catch (e) {}
+    }
+
+    function updateSoundButton() {
+      const btn = document.getElementById('soundToggleBtn');
+      if (!btn) return;
+      btn.innerHTML = soundOn ? '<i class="fa-solid fa-volume-high"></i>' : '<i class="fa-solid fa-volume-xmark"></i>';
+      btn.title = soundOn ? '효과음 끄기' : '효과음 켜기';
+    }
+
+    function toggleSound() {
+      soundOn = !soundOn;
+      try { localStorage.setItem('otngSound', soundOn ? 'on' : 'off'); } catch (e) {}
+      updateSoundButton();
+      if (soundOn) playSound('check');
+      toast(soundOn ? '효과음을 켰어요 🔊' : '효과음을 껐어요 🔇', 'info', 1500);
+    }
+
+    function isBookAllRead(book, readMap) {
+      for (let ch = 1; ch <= book.chapters; ch++) {
+        if (readMap[`${book.name}_${ch}`] === undefined) return false;
+      }
+      return true;
+    }
+
+    // 읽음 변화에 맞는 효과음: 핀 획득 > 한 권 완독 > 한 장 체크 > 해제
+    function playReadSound(book, wasBookDone, prevStats, nextStats, checked) {
+      const applicablePins = getApplicablePinCategories(currentUser ? currentUser.group : null);
+      const newPin = nextStats.eligiblePins.some(p => applicablePins.includes(p) && !prevStats.eligiblePins.includes(p));
+      if (newPin) playSound('pin');
+      else if (!wasBookDone && isBookAllRead(book, userReadMap)) playSound('book');
+      else playSound(checked ? 'check' : 'uncheck');
+    }
+
     async function toggleChapter(key, book) {
       if (isBookLocked(book)) {
         toast('이미 핀을 받은 항목이에요! 수정하려면 선생님(관리자)이 먼저 핀 지급을 취소해야 해요.', 'info');
         return;
       }
+      sfxReady(); // 아이폰은 누르는 순간에 소리를 깨워 둬야 한다
 
       const prevStats = calculateStats(userReadMap);
+      const wasBookDone = isBookAllRead(book, userReadMap);
       const existing = userReadMap[key];
       const { full: todayFull } = getTodayDateParts();
 
@@ -2147,6 +2242,7 @@
       scheduleSave();
 
       try {
+        playReadSound(book, wasBookDone, prevStats, nextStats, userReadMap[key] !== undefined);
         checkNewlyEarnedPin(prevStats.eligiblePins, nextStats.eligiblePins);
         renderChapters();
         renderBooksGrid();
@@ -2166,7 +2262,9 @@
         return;
       }
 
+      sfxReady();
       const prevStats = calculateStats(userReadMap);
+      const wasBookDone = isBookAllRead(book, userReadMap);
       let readCount = 0;
       for (let ch = 1; ch <= book.chapters; ch++) {
         if (userReadMap[`${book.name}_${ch}`] !== undefined) readCount++;
@@ -2200,6 +2298,7 @@
       scheduleSave();
 
       try {
+        playReadSound(book, wasBookDone, prevStats, nextStats, shouldSelectAll);
         checkNewlyEarnedPin(prevStats.eligiblePins, nextStats.eligiblePins);
         renderChapters();
         renderBooksGrid();
