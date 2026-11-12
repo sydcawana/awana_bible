@@ -412,6 +412,22 @@
     }
     .admin-filter-btn.btn-filter-스팍스.active { background-color: var(--awana-sparks); border-color: var(--awana-sparks); color: white; }
     .admin-filter-btn.btn-filter-티앤티.active { background-color: var(--awana-tnt); border-color: var(--awana-tnt); color: white; }
+    .insight-cards { display:grid; grid-template-columns:repeat(3,1fr); gap:6px; margin-bottom:10px; }
+    .insight-card { background:#fff; border:1px solid #E3E8EE; border-radius:12px; padding:8px 4px; text-align:center; }
+    .insight-val { font-size:1.15rem; font-weight:800; color:#1D3557; line-height:1.2; }
+    .insight-lbl { font-size:0.68rem; color:#6c757d; }
+    .insight-delta { font-size:0.68rem; font-weight:700; }
+    .insight-delta.up { color:#198754; } .insight-delta.down { color:#DC3545; } .insight-delta.same { color:#6c757d; }
+    .insight-box { background:#fff; border:1px solid #E3E8EE; border-radius:12px; padding:10px; margin-bottom:10px; }
+    .insight-title { font-weight:800; font-size:0.82rem; color:#1D3557; margin-bottom:6px; }
+    .insight-sub { font-size:0.68rem; color:#6c757d; font-weight:400; }
+    .insight-legend { display:flex; gap:10px; font-size:0.68rem; color:#555; margin-top:4px; justify-content:center; }
+    .insight-legend i { display:inline-block; width:9px; height:9px; border-radius:2px; margin-right:3px; vertical-align:middle; }
+    .insight-row { display:flex; align-items:center; gap:6px; padding:6px 2px; border-top:1px solid #F1F3F5; font-size:0.8rem; cursor:pointer; }
+    .insight-row:first-of-type { border-top:none; }
+    .insight-row .nm { font-weight:700; flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .insight-row .meta { font-size:0.72rem; color:#6c757d; flex:none; }
+    .insight-more { background:none; border:none; color:#0d6efd; font-size:0.75rem; padding:4px 0 0; }
     .admin-filter-btn.btn-filter-선생님.active { background-color: var(--awana-teacher); border-color: var(--awana-teacher); color: white; }
 
     .admin-user-card {
@@ -928,6 +944,9 @@
             </div>
           </div>
 
+          <!-- 한눈에 보기: 참여율 · 12주 그래프 · 격려가 필요한 아이 · 많이 늘어난 아이 -->
+          <div id="adminInsights" class="mb-3"></div>
+
           <div class="row g-2 mb-3 align-items-center">
             <div class="col-8">
               <select id="weeklyWeekSelector" class="form-select form-select-sm fw-bold border-primary" onchange="renderWeeklyStats()"></select>
@@ -942,9 +961,14 @@
             <div class="d-flex justify-content-around text-center" id="weeklyGroupSummary"></div>
           </div>
 
+          <div class="admin-filter-group mb-2" id="weeklyViewButtons">
+            <button type="button" class="admin-filter-btn active" onclick="setWeeklyViewMode('sum')">주간 합계</button>
+            <button type="button" class="admin-filter-btn" onclick="setWeeklyViewMode('daily')">날짜별</button>
+          </div>
+
           <div class="table-responsive">
             <table class="table table-bordered table-hover align-middle text-center" style="font-size: 0.8rem;">
-              <thead class="table-light">
+              <thead class="table-light" id="weeklyStatsTableHead">
                 <tr>
                   <th>소속</th>
                   <th>이름</th>
@@ -953,6 +977,7 @@
                 </tr>
               </thead>
               <tbody id="weeklyStatsTableBody"></tbody>
+              <tfoot id="weeklyStatsTableFoot"></tfoot>
             </table>
           </div>
         </div>
@@ -3002,6 +3027,15 @@
       }
     }
 
+    let weeklyViewMode = 'sum';
+    function setWeeklyViewMode(mode) {
+      weeklyViewMode = mode;
+      document.querySelectorAll('#weeklyViewButtons .admin-filter-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.innerText.trim() === (mode === 'daily' ? '날짜별' : '주간 합계'));
+      });
+      renderWeeklyStats();
+    }
+
     function setWeeklyFilter(filterGroup) {
       adminWeeklyFilterValue = filterGroup;
       document.querySelectorAll('#weeklyFilterButtons .admin-filter-btn').forEach(btn => {
@@ -3013,7 +3047,168 @@
       renderWeeklyStats();
     }
 
+    // ===== 관리자: 한눈에 보기 =====
+    function ymdOf(d) {
+      const m = d.getMonth() + 1, day = d.getDate();
+      return `${d.getFullYear()}-${m < 10 ? '0' : ''}${m}-${day < 10 ? '0' : ''}${day}`;
+    }
+    function addDaysTo(d, n) { const x = new Date(d); x.setDate(x.getDate() + n); return x; }
+    function daysBetween(fromYmd, toYmd) {
+      return Math.round((new Date(toYmd + 'T12:00:00') - new Date(fromYmd + 'T12:00:00')) / 86400000);
+    }
+
+    let insightShowAllQuiet = false;
+    let insightShowNever = false;
+
+    function openInsightUser(userId) {
+      const u = adminUsersData.find(x => String(x.id) === String(userId));
+      if (u) toggleUserStatsModal(u);
+    }
+
+    function renderAdminInsights() {
+      const box = document.getElementById('adminInsights');
+      if (!box) return;
+
+      const filter = adminWeeklyFilterValue;
+      const users = adminUsersData.filter(u => filter === 'ALL' || u.group === filter);
+      // 격려·성장 목록은 아이들 위주 (선생님 필터를 고르면 선생님만)
+      const kids = users.filter(u => filter === '선생님' || u.group !== '선생님');
+
+      const now = getSeoulNow();
+      const today = ymdOf(now);
+      const dow = now.getDay();
+      const thisMon = addDaysTo(now, (dow === 0 ? -6 : 1) - dow);
+      const daysSoFar = daysBetween(ymdOf(thisMon), today); // 0(월)~6(일)
+
+      // 12주 구간
+      const weeks = [];
+      for (let i = 11; i >= 0; i--) {
+        const mon = addDaysTo(thisMon, -7 * i);
+        weeks.push({ start: ymdOf(mon), end: ymdOf(addDaysTo(mon, 6)), label: `${mon.getMonth() + 1}/${mon.getDate()}`, g: { '스팍스': 0, '티앤티': 0, '선생님': 0 }, total: 0 });
+      }
+      const thisWeekStart = weeks[11].start;
+      const lastWeekStart = weeks[10].start;
+      const lastWeekSameDay = ymdOf(addDaysTo(new Date(lastWeekStart + 'T12:00:00'), daysSoFar));
+      const r28Start = ymdOf(addDaysTo(now, -27));
+      const p28Start = ymdOf(addDaysTo(now, -55));
+
+      let thisWeekCh = 0, lastWeekCh = 0, thisReaders = 0, lastReaders = 0;
+      const info = {};
+
+      users.forEach(u => {
+        let last = '', tw = 0, lw = 0, r28 = 0, p28 = 0;
+        Object.values(u.readChaptersMap || {}).forEach(item => {
+          const d = getFullDateStr(item);
+          if (!d || d === PAST_READ_DATE) return;
+          if (d > last) last = d;
+          if (d >= thisWeekStart && d <= today) tw++;
+          if (d >= lastWeekStart && d <= lastWeekSameDay) lw++;
+          if (d >= r28Start && d <= today) r28++;
+          else if (d >= p28Start && d < r28Start) p28++;
+          if (d >= weeks[0].start) {
+            const w = weeks.find(x => d >= x.start && d <= x.end);
+            if (w) { w.total++; if (w.g[u.group] !== undefined) w.g[u.group]++; }
+          }
+        });
+        thisWeekCh += tw; lastWeekCh += lw;
+        if (tw > 0) thisReaders++;
+        if (lw > 0) lastReaders++;
+        info[u.id] = { last, r28, p28 };
+      });
+
+      const total = users.length;
+      const rate = total ? Math.round(thisReaders / total * 100) : 0;
+      const lastRate = total ? Math.round(lastReaders / total * 100) : 0;
+      const delta = (a, b, unit) => {
+        const d = a - b;
+        if (d > 0) return `<div class="insight-delta up">▲ ${d}${unit}</div>`;
+        if (d < 0) return `<div class="insight-delta down">▼ ${-d}${unit}</div>`;
+        return `<div class="insight-delta same">지난주와 같음</div>`;
+      };
+
+      // ① 숫자 카드
+      let html = `
+        <div class="insight-title"><i class="fa-solid fa-bolt text-warning me-1"></i>이번 주 한눈에 보기
+          <span class="insight-sub">(지난주 같은 요일까지와 비교)</span></div>
+        <div class="insight-cards">
+          <div class="insight-card"><div class="insight-val">${thisReaders}<span style="font-size:.75rem;color:#6c757d;">/${total}명</span></div><div class="insight-lbl">읽은 사람</div>${delta(thisReaders, lastReaders, '명')}</div>
+          <div class="insight-card"><div class="insight-val">${rate}%</div><div class="insight-lbl">참여율</div>${delta(rate, lastRate, '%p')}</div>
+          <div class="insight-card"><div class="insight-val">${thisWeekCh}<span style="font-size:.75rem;color:#6c757d;">장</span></div><div class="insight-lbl">읽은 장</div>${delta(thisWeekCh, lastWeekCh, '장')}</div>
+        </div>`;
+
+      // ② 12주 그래프 (그룹별 쌓은 막대)
+      const colors = { '스팍스': '#DC3545', '티앤티': '#198754', '선생님': '#6C757D' };
+      const groups = filter === 'ALL' ? ['스팍스', '티앤티', '선생님'] : [filter];
+      const maxV = Math.max(1, ...weeks.map(w => w.total));
+      const W = 340, H = 150, top = 16, bottom = 20, left = 4, slot = (W - left * 2) / 12, bw = slot * 0.62;
+      const chartH = H - top - bottom;
+      let bars = '';
+      weeks.forEach((w, i) => {
+        const x = left + i * slot + (slot - bw) / 2;
+        let y = H - bottom;
+        groups.forEach(g => {
+          const v = w.g[g] || 0;
+          if (!v) return;
+          const h = v / maxV * chartH;
+          y -= h;
+          bars += `<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${bw.toFixed(1)}" height="${h.toFixed(1)}" fill="${colors[g]}" rx="2"><title>${w.label} 주 ${g} ${v}장</title></rect>`;
+        });
+        if (w.total) bars += `<text x="${(x + bw / 2).toFixed(1)}" y="${(y - 3).toFixed(1)}" font-size="9" text-anchor="middle" fill="#333" font-weight="700">${w.total}</text>`;
+        if (i % 2 === 1 || i === 11) bars += `<text x="${(x + bw / 2).toFixed(1)}" y="${H - 6}" font-size="9" text-anchor="middle" fill="${i === 11 ? '#0d6efd' : '#888'}" font-weight="${i === 11 ? 700 : 400}">${i === 11 ? '이번주' : w.label}</text>`;
+      });
+      html += `
+        <div class="insight-box">
+          <div class="insight-title"><i class="fa-solid fa-chart-column text-primary me-1"></i>최근 12주 읽은 장 <span class="insight-sub">(주 시작 날짜)</span></div>
+          <svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="최근 12주 읽은 장 그래프">
+            <line x1="0" y1="${H - bottom}" x2="${W}" y2="${H - bottom}" stroke="#dee2e6"/>${bars}
+          </svg>
+          ${groups.length > 1 ? `<div class="insight-legend">${groups.map(g => `<span><i style="background:${colors[g]}"></i>${g}</span>`).join('')}</div>` : ''}
+        </div>`;
+
+      // ③ 격려가 필요한 아이 (2주 이상 안 읽음)
+      const quiet = [], never = [];
+      kids.forEach(u => {
+        const last = info[u.id] && info[u.id].last;
+        if (!last) never.push(u);
+        else {
+          const gap = daysBetween(last, today);
+          if (gap >= 14) quiet.push({ u, last, gap });
+        }
+      });
+      quiet.sort((a, b) => a.gap - b.gap);
+      const groupBadge = u => `<span class="badge badge-group-${escapeHtml(u.group)}" style="font-size:.6rem;">${escapeHtml(u.group)}</span>`;
+      const quietShown = insightShowAllQuiet ? quiet : quiet.slice(0, 8);
+      html += `
+        <div class="insight-box">
+          <div class="insight-title"><i class="fa-solid fa-hand-holding-heart me-1" style="color:#E66767;"></i>격려가 필요한 친구 <span class="insight-sub">(2주 넘게 안 읽음 · ${quiet.length}명)</span></div>
+          ${quiet.length ? quietShown.map(q => `
+            <div class="insight-row" onclick="openInsightUser('${escapeHtml(String(q.u.id))}')">
+              ${groupBadge(q.u)}<span class="nm">${escapeHtml(q.u.name)}</span>
+              <span class="meta">마지막 ${getShortDateStr(q.last)} · <strong style="color:#E66767;">${q.gap}일 전</strong></span>
+            </div>`).join('') : '<div class="small text-muted py-1">모두 2주 안에 읽었어요! 👏</div>'}
+          ${quiet.length > 8 ? `<button class="insight-more" onclick="insightShowAllQuiet=!insightShowAllQuiet;renderAdminInsights()">${insightShowAllQuiet ? '접기' : `${quiet.length - 8}명 더 보기`}</button>` : ''}
+          ${never.length ? `<div><button class="insight-more" onclick="insightShowNever=!insightShowNever;renderAdminInsights()">앱에서 아직 한 번도 안 읽은 친구 ${never.length}명 ${insightShowNever ? '▲' : '▼'}</button>
+            ${insightShowNever ? `<div class="small mt-1" style="line-height:1.9;">${never.map(u => `${groupBadge(u)} ${escapeHtml(u.name)}`).join(' &nbsp;')}</div>` : ''}</div>` : ''}
+        </div>`;
+
+      // ④ 많이 늘어난 아이 (최근 4주 vs 그 전 4주)
+      const grew = kids.map(u => ({ u, r: info[u.id] ? info[u.id].r28 : 0, p: info[u.id] ? info[u.id].p28 : 0 }))
+        .filter(x => x.r > x.p).sort((a, b) => (b.r - b.p) - (a.r - a.p)).slice(0, 5);
+      html += `
+        <div class="insight-box">
+          <div class="insight-title"><i class="fa-solid fa-seedling text-success me-1"></i>많이 늘어난 친구 <span class="insight-sub">(최근 4주 vs 그 전 4주)</span></div>
+          ${grew.length ? grew.map((x, i) => `
+            <div class="insight-row" onclick="openInsightUser('${escapeHtml(String(x.u.id))}')">
+              <span style="width:16px;text-align:center;">${['🥇', '🥈', '🥉', '⭐', '⭐'][i]}</span>${groupBadge(x.u)}<span class="nm">${escapeHtml(x.u.name)}</span>
+              <span class="meta">${x.p}장 → ${x.r}장 <strong class="text-success">+${x.r - x.p}</strong></span>
+            </div>`).join('') : '<div class="small text-muted py-1">아직 늘어난 친구가 없어요.</div>'}
+        </div>`;
+
+      box.innerHTML = html;
+    }
+
     function renderWeeklyStats() {
+      try { renderAdminInsights(); } catch (e) { console.error('한눈에 보기 오류:', e); }
       const tbody = document.getElementById('weeklyStatsTableBody');
       tbody.innerHTML = '';
 
@@ -3032,11 +3227,16 @@
 
       let groupCountsThisWeek = { '스팍스': 0, '티앤티': 0, '선생님': 0 };
       const sortedUsers = sortUsersByGroup(adminUsersData);
+      const monYmd = ymdOf(targetMon);
+      const todayYmd = ymdOf(now);
+      const dayYmds = [0, 1, 2, 3, 4, 5, 6].map(i => ymdOf(addDaysTo(targetMon, i)));
+      const dayTotals = [0, 0, 0, 0, 0, 0, 0];
 
       sortedUsers.forEach(user => {
         if (adminWeeklyFilterValue !== 'ALL' && user.group !== adminWeeklyFilterValue) return;
 
         let selectedWeekCount = 0;
+        const dayCounts = [0, 0, 0, 0, 0, 0, 0];
         let latestFullDate = '';   // 가장 최근에 읽은 날짜 ("YYYY-MM-DD"는 문자열 비교로 최신을 찾을 수 있다)
 
         const readMap = user.readChaptersMap || {};
@@ -3047,6 +3247,8 @@
           const itemDate = new Date(fullDateStr + 'T00:00:00');
           if (itemDate >= targetMon && itemDate <= targetSun) {
             selectedWeekCount++;
+            const di = daysBetween(monYmd, fullDateStr);
+            if (di >= 0 && di < 7) dayCounts[di]++;
           }
           if (fullDateStr > latestFullDate) latestFullDate = fullDateStr;
         });
@@ -3057,14 +3259,35 @@
         }
 
         const tr = document.createElement('tr');
-        tr.innerHTML = `
-          <td><span class="badge badge-group-${escapeHtml(user.group)}">${escapeHtml(user.group)}</span></td>
-          <td class="fw-bold">${escapeHtml(user.name)}</td>
-          <td><span class="badge bg-primary rounded-pill px-2 py-1">${selectedWeekCount}장</span></td>
-          <td class="small text-muted">${lastReadDate}</td>
-        `;
+        if (weeklyViewMode === 'daily') {
+          dayCounts.forEach((c, i) => { dayTotals[i] += c; });
+          tr.innerHTML = `
+            <td class="fw-bold text-start" style="white-space:nowrap;"><span class="badge badge-group-${escapeHtml(user.group)} me-1" style="font-size:.55rem;">${escapeHtml(user.group).slice(0, 1)}</span>${escapeHtml(user.name)}</td>
+            ${dayCounts.map((c, i) => `<td class="${dayYmds[i] > todayYmd ? 'text-muted' : ''}" style="padding:4px 2px;${c ? `background:rgba(104,196,150,${Math.min(0.25 + c * 0.08, 0.85)});font-weight:700;` : 'color:#ced4da;'}">${c || (dayYmds[i] > todayYmd ? '' : '·')}</td>`).join('')}
+            <td class="fw-bold">${selectedWeekCount}</td>
+          `;
+        } else {
+          tr.innerHTML = `
+            <td><span class="badge badge-group-${escapeHtml(user.group)}">${escapeHtml(user.group)}</span></td>
+            <td class="fw-bold">${escapeHtml(user.name)}</td>
+            <td><span class="badge bg-primary rounded-pill px-2 py-1">${selectedWeekCount}장</span></td>
+            <td class="small text-muted">${lastReadDate}</td>
+          `;
+        }
         tbody.appendChild(tr);
       });
+
+      // 표 머리·바닥: 날짜별 보기면 월~일 칸과 날마다 합계
+      const thead = document.getElementById('weeklyStatsTableHead');
+      const tfoot = document.getElementById('weeklyStatsTableFoot');
+      if (weeklyViewMode === 'daily') {
+        const names = ['월', '화', '수', '목', '금', '토', '일'];
+        thead.innerHTML = `<tr><th class="text-start">이름</th>${dayYmds.map((d, i) => `<th style="padding:4px 2px;${d === todayYmd ? 'background:#E7F1FF;' : ''}${i === 6 ? 'color:#DC3545;' : ''}">${names[i]}<div style="font-size:.6rem;font-weight:400;">${getShortDateStr(d)}</div></th>`).join('')}<th>합계</th></tr>`;
+        tfoot.innerHTML = `<tr class="table-light fw-bold"><td class="text-start">날마다 합계</td>${dayTotals.map(t => `<td style="padding:4px 2px;">${t}</td>`).join('')}<td>${dayTotals.reduce((a, b) => a + b, 0)}</td></tr>`;
+      } else {
+        thead.innerHTML = `<tr><th>소속</th><th>이름</th><th>해당 주간 읽은 장수</th><th>최근 읽은 날짜</th></tr>`;
+        tfoot.innerHTML = '';
+      }
 
       document.getElementById('weeklyGroupSummary').innerHTML = `
         <div><span class="badge badge-group-스팍스 me-1">스팍스</span><strong>${groupCountsThisWeek['스팍스']}장</strong></div>
