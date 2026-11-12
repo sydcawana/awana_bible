@@ -3137,10 +3137,10 @@
         </div>`;
 
       // ② 12주 그래프 (그룹별 쌓은 막대)
-      const colors = { '스팍스': '#DC3545', '티앤티': '#198754', '선생님': '#6C757D' };
+      const colors = { '스팍스': '#F5B5BC', '티앤티': '#A8DABD', '선생님': '#D3D7DC' };
       const groups = filter === 'ALL' ? ['스팍스', '티앤티', '선생님'] : [filter];
       const maxV = Math.max(1, ...weeks.map(w => w.total));
-      const W = 340, H = 150, top = 16, bottom = 20, left = 4, slot = (W - left * 2) / 12, bw = slot * 0.62;
+      const W = 340, H = 110, top = 14, bottom = 18, left = 4, slot = (W - left * 2) / 12, bw = slot * 0.42;
       const chartH = H - top - bottom;
       let bars = '';
       weeks.forEach((w, i) => {
@@ -3153,14 +3153,14 @@
           y -= h;
           bars += `<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${bw.toFixed(1)}" height="${h.toFixed(1)}" fill="${colors[g]}" rx="2"><title>${w.label} 주 ${g} ${v}장</title></rect>`;
         });
-        if (w.total) bars += `<text x="${(x + bw / 2).toFixed(1)}" y="${(y - 3).toFixed(1)}" font-size="9" text-anchor="middle" fill="#333" font-weight="700">${w.total}</text>`;
-        if (i % 2 === 1 || i === 11) bars += `<text x="${(x + bw / 2).toFixed(1)}" y="${H - 6}" font-size="9" text-anchor="middle" fill="${i === 11 ? '#0d6efd' : '#888'}" font-weight="${i === 11 ? 700 : 400}">${i === 11 ? '이번주' : w.label}</text>`;
+        if (w.total) bars += `<text x="${(x + bw / 2).toFixed(1)}" y="${(y - 3).toFixed(1)}" font-size="8" text-anchor="middle" fill="${i === 11 ? '#1D3557' : '#9AA3AD'}" font-weight="${i === 11 ? 700 : 400}">${w.total}</text>`;
+        if (i % 2 === 1 || i === 11) bars += `<text x="${(x + bw / 2).toFixed(1)}" y="${H - 5}" font-size="8" text-anchor="middle" fill="${i === 11 ? '#1D3557' : '#ADB5BD'}" font-weight="${i === 11 ? 700 : 400}">${i === 11 ? '이번주' : w.label}</text>`;
       });
       html += `
         <div class="insight-box">
           <div class="insight-title"><i class="fa-solid fa-chart-column text-primary me-1"></i>최근 12주 읽은 장 <span class="insight-sub">(주 시작 날짜)</span></div>
           <svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="최근 12주 읽은 장 그래프">
-            <line x1="0" y1="${H - bottom}" x2="${W}" y2="${H - bottom}" stroke="#dee2e6"/>${bars}
+            <line x1="0" y1="${H - bottom}" x2="${W}" y2="${H - bottom}" stroke="#EEF1F4"/>${bars}
           </svg>
           ${groups.length > 1 ? `<div class="insight-legend">${groups.map(g => `<span><i style="background:${colors[g]}"></i>${g}</span>`).join('')}</div>` : ''}
         </div>`;
