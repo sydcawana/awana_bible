@@ -1,0 +1,1110 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>어통조아 관리자 통계 시안</title>
+<link rel="icon" href="icons/icon-192.png">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+<style>
+    :root {
+      --awana-sparks: #DC3545;  
+      --awana-tnt: #198754;     
+      --awana-teacher: #6C757D; 
+      --awana-blue: #1D3557;    
+      --awana-yellow: #FFB703;
+      --awana-bg: #F8F9FA;
+
+      --ot-color: #00A896;         
+      --nt-color: #E66767;         
+      --read-green: #68C496;       
+
+      /* 파스텔톤 완독/체크 포인트 색상 */
+      --cat-bg-모세오경: #E8F5E9; --cat-text-모세오경: #1B5E20; --cat-point-모세오경: #81C784;
+      --cat-bg-역사서: #E3F2FD; --cat-text-역사서: #0D47A1; --cat-point-역사서: #64B5F6;
+      --cat-bg-시가서: #FFFDE7; --cat-text-시가서: #F57F17; --cat-point-시가서: #FFD54F;
+      --cat-bg-예언서: #F3E5F5; --cat-text-예언서: #4A148C; --cat-point-예언서: #BA68C8;
+      --cat-bg-복음서: #FBE9E7; --cat-text-복음서: #BF360C; --cat-point-복음서: #FF8A65;
+      --cat-bg-사도행전: #E0F7FA; --cat-text-사도행전: #006064; --cat-point-사도행전: #4DD0E1;
+      --cat-bg-서신서: #EDE7F6; --cat-text-서신서: #311B92; --cat-point-서신서: #9575CD;
+      --cat-bg-계시록: #FCE4EC; --cat-text-계시록: #880E4F; --cat-point-계시록: #F06292;
+
+      --pt-ot-main: #E0F2F1;
+      --pt-nt-main: #FFEBEE;
+
+      /* 탭 및 입력폼 파스텔톤 색상 추가 */
+      --auth-pastel-login: #E3F2FD;
+      --auth-pastel-login-active: #1976D2;
+      --auth-pastel-reg: #E8F5E9;
+      --auth-pastel-reg-active: #388E3C;
+      --auth-pastel-admin: #FFF3E0;
+      --auth-pastel-admin-active: #F57C00;
+    }
+    body {
+      background-color: #F4F7F6;
+      font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      color: #333;
+    }
+
+    /* 4. 헤더 크기 및 비율 개선 + 스크롤해도 상단 고정 */
+    .header-box {
+      padding: 0;
+      overflow: hidden;
+      border-radius: 12px;
+      box-shadow: 0 3px 10px rgba(0,0,0,0.08);
+      position: sticky;
+      top: 0;
+      z-index: 1030;
+      line-height: 0;
+    }
+    .header-box img {
+      width: 100%;
+      height: auto;
+      display: block;
+      cursor: pointer;
+    }
+
+    .card-custom {
+      border: none;
+      border-radius: 16px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+      background: white;
+    }
+
+    /* 2. 로그인, 신규등록, 관리자 탭 파스텔 배경 및 클릭 시 변경 디자인 */
+    .auth-nav-pill .nav-link {
+      font-weight: 700;
+      border-radius: 10px;
+      padding: 10px;
+      transition: all 0.2s ease;
+      color: #555;
+    }
+    #tabLogin {
+      background-color: var(--auth-pastel-login);
+      color: #1565C0;
+    }
+    #tabLogin.active {
+      background-color: var(--auth-pastel-login-active) !important;
+      color: white !important;
+    }
+    #tabRegister {
+      background-color: var(--auth-pastel-reg);
+      color: #2E7D32;
+    }
+    #tabRegister.active {
+      background-color: var(--auth-pastel-reg-active) !important;
+      color: white !important;
+    }
+    #tabAdmin {
+      background-color: var(--auth-pastel-admin);
+      color: #E65100;
+    }
+    #tabAdmin.active {
+      background-color: var(--auth-pastel-admin-active) !important;
+      color: white !important;
+    }
+
+    /* 3. 소속, 이름, 비밀번호 입력영역 스타일 개선 */
+    .form-custom-card {
+      background-color: #FAFBFD;
+      border: 1px solid #E2E8F0;
+      border-radius: 12px;
+      padding: 14px;
+      margin-bottom: 14px;
+    }
+    .form-custom-label {
+      font-weight: 700;
+      font-size: 0.9rem;
+      margin-bottom: 6px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .form-control-styled, .form-select-styled {
+      border-radius: 8px;
+      border: 1px solid #CBD5E1;
+      padding: 10px 12px;
+      font-size: 0.95rem;
+      background-color: #FFFFFF;
+    }
+    .form-control-styled:focus, .form-select-styled:focus {
+      border-color: #457B9D;
+      box-shadow: 0 0 0 3px rgba(69, 123, 157, 0.15);
+    }
+
+    .btn-awana {
+      background-color: var(--awana-sparks);
+      color: white;
+      font-weight: bold;
+      border-radius: 12px;
+      padding: 12px;
+    }
+    .btn-awana:hover {
+      background-color: #BB2D3B;
+      color: white;
+    }
+    .nav-pills .nav-link.active {
+      background-color: var(--awana-blue);
+    }
+    
+    .badge-group-스팍스 { background-color: var(--awana-sparks) !important; color: white; }
+    .badge-group-티앤티 { background-color: var(--awana-tnt) !important; color: white; }
+    .badge-group-선생님 { background-color: var(--awana-teacher) !important; color: white; }
+
+    #userGroup.group-스팍스 { background-color: #F8D7DA; color: #842029; font-weight: bold; }
+    #userGroup.group-티앤티 { background-color: #D1E7DD; color: #0F5132; font-weight: bold; }
+    #userGroup.group-선생님 { background-color: #E2E3E5; color: #41464B; font-weight: bold; }
+
+    /* 통독핀 카드 */
+    .pin-compact-card {
+      border-radius: 6px;
+      padding: 3px 2px;
+      font-size: 0.68rem;
+      font-weight: bold;
+      text-align: center;
+      transition: all 0.2s;
+      min-height: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      word-break: keep-all;
+      line-height: 1.1;
+    }
+    .pin-bg-unearned { background-color: #E9ECEF; color: #6C757D; } 
+    .pin-bg-eligible { background-color: #FFD166; color: #000000; box-shadow: 0 0 5px rgba(255,183,3,0.5); } 
+    .pin-bg-granted { background-color: var(--read-green); color: #FFFFFF; } 
+
+    /* 구약/신약 성경 권 가로 5개 그리드 */
+    .book-grid-mobile {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 5px;
+    }
+    .book-card-mobile {
+      border: 1px solid #DEE2E6;
+      border-radius: 6px;
+      padding: 6px 1px;
+      text-align: center;
+      background-color: #FFFFFF;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 0.68rem;
+      color: #333;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+      word-break: keep-all;
+      line-height: 1.1;
+      height: 48px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      transition: all 0.15s ease-in-out;
+    }
+    .book-card-name {
+      font-size: 0.68rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 100%;
+      letter-spacing: -0.5px;
+    }
+    .book-card-mobile.active-book { border: 2.5px solid var(--awana-yellow) !important; }
+    /* 이미 핀을 받은 범위의 책: 오른쪽 위 작은 메달 */
+    .book-card-mobile { position: relative; }
+    .book-pin-badge { position: absolute; top: 1px; right: 2px; font-size: 0.6rem; line-height: 1; }
+
+    /* 부드러운 완독 색상 */
+    .book-card-모세오경 { background-color: var(--cat-bg-모세오경); color: var(--cat-text-모세오경); border-color: #C8E6C9; }
+    .book-card-모세오경.completed-book { background-color: var(--cat-point-모세오경) !important; color: #FFF !important; }
+
+    .book-card-역사서 { background-color: var(--cat-bg-역사서); color: var(--cat-text-역사서); border-color: #BBDEFB; }
+    .book-card-역사서.completed-book { background-color: var(--cat-point-역사서) !important; color: #FFF !important; }
+
+    .book-card-시가서 { background-color: var(--cat-bg-시가서); color: var(--cat-text-시가서); border-color: #FFF59D; }
+    .book-card-시가서.completed-book { background-color: var(--cat-point-시가서) !important; color: #333 !important; font-weight: bold; }
+
+    .book-card-예언서 { background-color: var(--cat-bg-예언서); color: var(--cat-text-예언서); border-color: #E1BEE7; }
+    .book-card-예언서.completed-book { background-color: var(--cat-point-예언서) !important; color: #FFF !important; }
+
+    .book-card-복음서 { background-color: var(--cat-bg-복음서); color: var(--cat-text-복음서); border-color: #FFCCBC; }
+    .book-card-복음서.completed-book { background-color: var(--cat-point-복음서) !important; color: #FFF !important; }
+
+    .book-card-사도행전 { background-color: var(--cat-bg-사도행전); color: var(--cat-text-사도행전); border-color: #B2EBF2; }
+    .book-card-사도행전.completed-book { background-color: var(--cat-point-사도행전) !important; color: #FFF !important; }
+
+    .book-card-서신서 { background-color: var(--cat-bg-서신서); color: var(--cat-text-서신서); border-color: #D1C4E9; }
+    .book-card-서신서.completed-book { background-color: var(--cat-point-서신서) !important; color: #FFF !important; }
+
+    .book-card-계시록 { background-color: var(--cat-bg-계시록); color: var(--cat-text-계시록); border-color: #F8BBD0; }
+    .book-card-계시록.completed-book { background-color: var(--cat-point-계시록) !important; color: #FFF !important; }
+
+    /* 장 체크 버튼: 가로 7개 */
+    .chapter-grid-7 {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 4px;
+    }
+    .chapter-btn-box {
+      width: 100%;
+      height: 42px;
+      font-weight: bold;
+      border-radius: 6px;
+      border: 1px solid #DEE2E6;
+      background-color: #FFF;
+      color: #495057;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 1px;
+      cursor: pointer;
+    }
+    .chapter-num { font-size: 0.82rem; line-height: 1; }
+    .chapter-date { font-size: 0.58rem; opacity: 0.9; margin-top: 2px; }
+
+    .chapter-btn-box.chapter-locked {
+      cursor: not-allowed;
+      opacity: 0.75;
+      position: relative;
+    }
+    .chapter-lock-icon {
+      position: absolute;
+      top: 2px;
+      right: 3px;
+      font-size: 0.55rem;
+      color: rgba(0,0,0,0.5);
+    }
+    .chapter-btn-box.chapter-locked.read .chapter-lock-icon {
+      color: rgba(255,255,255,0.85);
+    }
+
+    .recent-highlight {
+      outline: 3px solid #FF7043;
+      outline-offset: 2px;
+      animation: recentPulse 0.6s ease-in-out 2;
+      z-index: 2;
+      position: relative;
+    }
+    @keyframes recentPulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.12); }
+    }
+
+    .pin-request-alert {
+      background: linear-gradient(135deg, #FFF3CD, #FFE8A1);
+      border: 1px solid #FFD666;
+      border-radius: 10px;
+      padding: 10px 14px;
+      margin-bottom: 12px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: #7A5A00;
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+    }
+    .pin-request-alert i {
+      margin-top: 2px;
+      flex-shrink: 0;
+    }
+    .pin-request-alert span {
+      flex: 1;
+      line-height: 1.4;
+      word-break: keep-all;
+      overflow-wrap: break-word;
+    }
+    .pin-request-alert + .pin-request-alert {
+      margin-top: -6px;
+    }
+
+    .chapter-theme-모세오경.read { background-color: var(--cat-point-모세오경); color: white; border-color: var(--cat-point-모세오경); }
+    .chapter-theme-역사서.read { background-color: var(--cat-point-역사서); color: white; border-color: var(--cat-point-역사서); }
+    .chapter-theme-시가서.read { background-color: var(--cat-point-시가서); color: #333; border-color: var(--cat-point-시가서); }
+    .chapter-theme-예언서.read { background-color: var(--cat-point-예언서); color: white; border-color: var(--cat-point-예언서); }
+    .chapter-theme-복음서.read { background-color: var(--cat-point-복음서); color: white; border-color: var(--cat-point-복음서); }
+    .chapter-theme-사도행전.read { background-color: var(--cat-point-사도행전); color: white; border-color: var(--cat-point-사도행전); }
+    .chapter-theme-서신서.read { background-color: var(--cat-point-서신서); color: white; border-color: var(--cat-point-서신서); }
+    .chapter-theme-계시록.read { background-color: var(--cat-point-계시록); color: white; border-color: var(--cat-point-계시록); }
+
+    .progress-title { font-size: 0.8rem; font-weight: bold; color: #6C757D; }
+    .sub-ratio { font-size: 0.78rem; color: #6C757D; font-weight: 600; }
+    .text-ot { color: var(--ot-color) !important; }
+    .text-nt { color: var(--nt-color) !important; }
+
+    .category-filter-btn {
+      font-size: 0.75rem;
+      padding: 4px 10px;
+      border-radius: 8px;
+      border: 1px solid #CED4DA;
+      background: #FFFFFF;
+      color: #495057;
+      font-weight: 600;
+      white-space: nowrap;
+      transition: all 0.2s;
+    }
+    .category-filter-btn.cat-전체.active { background-color: var(--awana-blue); color: white; border-color: var(--awana-blue); }
+    .category-filter-btn.cat-모세오경.active { background-color: var(--cat-bg-모세오경); color: var(--cat-text-모세오경); border-color: #81C784; }
+    .category-filter-btn.cat-역사서.active { background-color: var(--cat-bg-역사서); color: var(--cat-text-역사서); border-color: #64B5F6; }
+    .category-filter-btn.cat-시가서.active { background-color: var(--cat-bg-시가서); color: var(--cat-text-시가서); border-color: #FFF176; }
+    .category-filter-btn.cat-예언서.active { background-color: var(--cat-bg-예언서); color: var(--cat-text-예언서); border-color: #BA68C8; }
+    .category-filter-btn.cat-복음서.active { background-color: var(--cat-bg-복음서); color: var(--cat-text-복음서); border-color: #FF8A65; }
+    .category-filter-btn.cat-사도행전.active { background-color: var(--cat-bg-사도행전); color: var(--cat-text-사도행전); border-color: #4DD0E1; }
+    .category-filter-btn.cat-서신서.active { background-color: var(--cat-bg-서신서); color: var(--cat-text-서신서); border-color: #9575CD; }
+    .category-filter-btn.cat-계시록.active { background-color: var(--cat-bg-계시록); color: var(--cat-text-계시록); border-color: #F06292; }
+
+    .nav-tabs .nav-link.tab-ot.active { background-color: var(--pt-ot-main) !important; color: #00695C !important; border-color: #B2DFDB #B2DFDB transparent !important; }
+    .nav-tabs .nav-link.tab-nt.active { background-color: var(--pt-nt-main) !important; color: #C62828 !important; border-color: #FFCDD2 #FFCDD2 transparent !important; }
+
+    /* 관리자 모드 네모 버튼형 필터 */
+    .admin-filter-group {
+      display: flex;
+      gap: 6px;
+      width: 100%;
+    }
+    .admin-filter-btn {
+      flex: 1;
+      padding: 7px 2px;
+      text-align: center;
+      border: 1px solid #CED4DA;
+      border-radius: 8px;
+      font-size: 0.8rem;
+      font-weight: bold;
+      background: #FFFFFF;
+      color: #495057;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .admin-filter-btn.active {
+      background-color: var(--awana-blue);
+      color: white;
+      border-color: var(--awana-blue);
+    }
+    .admin-filter-btn.btn-filter-스팍스.active { background-color: var(--awana-sparks); border-color: var(--awana-sparks); color: white; }
+    .admin-filter-btn.btn-filter-티앤티.active { background-color: var(--awana-tnt); border-color: var(--awana-tnt); color: white; }
+    .insight-cards { display:grid; grid-template-columns:repeat(3,1fr); gap:6px; margin-bottom:10px; }
+    .insight-card { background:#fff; border:1px solid #E3E8EE; border-radius:12px; padding:8px 4px; text-align:center; }
+    .insight-val { font-size:1.15rem; font-weight:800; color:#1D3557; line-height:1.2; }
+    .insight-lbl { font-size:0.68rem; color:#6c757d; }
+    .insight-delta { font-size:0.68rem; font-weight:700; }
+    .insight-delta.up { color:#198754; } .insight-delta.down { color:#DC3545; } .insight-delta.same { color:#6c757d; }
+    .insight-box { background:#fff; border:1px solid #E3E8EE; border-radius:12px; padding:10px; margin-bottom:10px; }
+    .insight-title { font-weight:800; font-size:0.82rem; color:#1D3557; margin-bottom:6px; }
+    .insight-sub { font-size:0.68rem; color:#6c757d; font-weight:400; }
+    .insight-legend { display:flex; gap:10px; font-size:0.68rem; color:#555; margin-top:4px; justify-content:center; }
+    .insight-legend i { display:inline-block; width:9px; height:9px; border-radius:2px; margin-right:3px; vertical-align:middle; }
+    .insight-row { display:flex; align-items:center; gap:6px; padding:6px 2px; border-top:1px solid #F1F3F5; font-size:0.8rem; cursor:pointer; }
+    .insight-row:first-of-type { border-top:none; }
+    .insight-row .nm { font-weight:700; flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .insight-row .meta { font-size:0.72rem; color:#6c757d; flex:none; }
+    .insight-more { background:none; border:none; color:#0d6efd; font-size:0.75rem; padding:4px 0 0; }
+    .admin-filter-btn.btn-filter-선생님.active { background-color: var(--awana-teacher); border-color: var(--awana-teacher); color: white; }
+
+    .admin-user-card {
+      border: 1px solid #E9ECEF;
+      border-radius: 12px;
+      background: #FFFFFF;
+      margin-bottom: 12px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.03);
+      overflow: hidden;
+    }
+    .admin-user-card-top {
+      padding: 8px 12px;
+      background-color: #FAFBFB;
+      border-bottom: 1px solid #F1F3F5;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .admin-user-card-bottom {
+      padding: 10px 12px;
+    }
+    .admin-pin-chip {
+      border-radius: 6px;
+      padding: 3px 4px;
+      font-size: 0.72rem;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 4px;
+    }
+
+    .admin-user-name {
+      font-size: 0.95rem;
+      font-weight: bold;
+      color: #212529;
+    }
+    .admin-user-stat-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .btn-stat-large {
+      font-size: 0.78rem !important;
+      padding: 4px 10px !important;
+      font-weight: bold;
+      border-radius: 6px;
+    }
+    .btn-del-small {
+      font-size: 0.65rem !important;
+      padding: 2px 5px !important;
+      border-radius: 4px;
+      opacity: 0.8;
+    }
+
+    /* 통계 카드 높이 줄임 */
+    .period-stat-card {
+      background: #F8F9FA;
+      border-radius: 8px;
+      padding: 4px 2px;
+      text-align: center;
+      border: 1px solid #E9ECEF;
+    }
+    .period-stat-val {
+      font-size: 1rem;
+      font-weight: 800;
+      color: var(--awana-blue);
+      line-height: 1.2;
+    }
+    .period-stat-lbl {
+      font-size: 0.68rem;
+      color: #6C757D;
+      font-weight: bold;
+    }
+
+    .month-grid-4 {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 6px;
+    }
+    /* 월별 카드 높이 줄임 */
+    .month-stat-card {
+      border: 1px solid #DEE2E6;
+      border-radius: 6px;
+      padding: 3px 2px;
+      text-align: center;
+      background: #FFFFFF;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .month-stat-card:hover { background-color: #F1F3F5; }
+    .month-stat-card.active {
+      background-color: var(--awana-blue) !important;
+      color: #FFFFFF !important;
+      border-color: var(--awana-blue) !important;
+    }
+    .month-stat-card.active .month-badge {
+      background-color: #FFFFFF !important;
+      color: var(--awana-blue) !important;
+    }
+
+    /* 달력 셀 높이 줄임 */
+    .calendar-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 3px;
+    }
+    .calendar-header-cell {
+      text-align: center;
+      font-size: 0.72rem;
+      font-weight: bold;
+      padding: 3px 0;
+      color: #495057;
+      background-color: #E9ECEF;
+      border-radius: 4px;
+    }
+    .calendar-header-cell.sun { color: #DC3545; }
+    .calendar-header-cell.sat { color: #0D6EFD; }
+    .calendar-day-cell {
+      min-height: 29px;
+      border: 1px solid #DEE2E6;
+      border-radius: 5px;
+      padding: 1px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      background-color: #FFFFFF;
+    }
+    .calendar-day-cell.empty {
+      background-color: transparent;
+      border: none;
+    }
+    .calendar-day-cell.has-read {
+      background-color: #E8F8F5;
+      border-color: var(--ot-color);
+    }
+    .cal-day-num {
+      font-size: 0.65rem;
+      line-height: 1;
+      font-weight: 600;
+    }
+    .cal-read-badge {
+      font-size: 0.55rem;
+      font-weight: bold;
+      color: white;
+      background-color: var(--ot-color);
+      border-radius: 3px;
+      padding: 1px 2px;
+      margin-top: 1px;
+      line-height: 1;
+    }
+
+    .admin-nav-pill {
+      gap: 4px;
+    }
+    .admin-nav-pill .nav-link {
+      white-space: nowrap;
+      padding: 10px 4px;
+      font-size: 1.23rem;
+      border: 2px solid transparent;
+    }
+    #adminTabUsers { border-color: #B2DFDB; }
+    #adminTabPendingPins { border-color: #FFE0B2; }
+    #adminTabWeekly { border-color: #C5CAE9; }
+    @media (max-width: 400px) {
+      .admin-nav-pill .nav-link {
+        font-size: 1.08rem;
+        padding: 10px 2px;
+      }
+    }
+
+    .stats-name-highlight {
+      background: linear-gradient(135deg, #FFE0EC, #E0F0FF);
+      color: #6D4C91;
+      font-weight: 800;
+      padding: 2px 10px;
+      border-radius: 8px;
+      margin-right: 2px;
+      display: inline-block;
+    }
+
+    /* 플로팅 안내 메시지 (토스트): 화면 아래 가운데에 잠깐 떴다가 사라진다 */
+    .app-toast-container {
+      position: fixed;
+      left: 50%;
+      bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+      transform: translateX(-50%);
+      z-index: 2000;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      width: min(calc(100vw - 32px), 420px);
+      pointer-events: none;
+    }
+    .app-toast {
+      pointer-events: auto;
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 12px 12px 12px 14px;
+      border-radius: 12px;
+      background: #1D3557;
+      color: #FFFFFF;
+      font-size: 0.88rem;
+      font-weight: 600;
+      line-height: 1.45;
+      word-break: keep-all;
+      overflow-wrap: break-word;
+      white-space: pre-line;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.18);
+      opacity: 0;
+      transform: translateY(12px);
+      transition: opacity 0.2s ease, transform 0.2s ease;
+    }
+    .app-toast.show { opacity: 1; transform: none; }
+    .app-toast > i { margin-top: 2px; flex-shrink: 0; }
+    .app-toast-msg { flex: 1; }
+    .app-toast-close {
+      background: none;
+      border: none;
+      color: inherit;
+      opacity: 0.7;
+      font-size: 1.1rem;
+      line-height: 1;
+      padding: 0 2px;
+      flex-shrink: 0;
+    }
+    .app-toast-success { background: #2E7D32; }
+    .app-toast-error   { background: #C62828; }
+    .app-toast-warning { background: #FFB703; color: #3D2C00; }
+    .app-toast-info    { background: #1D3557; }
+
+    /* 지난 기록 입력: 아직 저장하지 않은 변경은 점선 테두리로 표시 */
+    .chapter-btn-box.pending-add { outline: 2px dashed #198754; outline-offset: -2px; }
+    .chapter-btn-box.pending-remove { outline: 2px dashed #DC3545; outline-offset: -2px; opacity: 0.6; }
+
+    /* 앱 내부 확인/입력 창 (다른 창 위에 뜰 수 있도록 더 위에 표시) */
+    #appDialogModal { z-index: 1080; }
+    #appDialogMessage {
+      white-space: pre-line;
+      word-break: keep-all;
+      overflow-wrap: break-word;
+      font-size: 0.95rem;
+      line-height: 1.5;
+    }
+
+    .welcome-banner {
+      background: linear-gradient(135deg, #E0F2FE, #F0FDF4);
+      border: 1px solid #BAE6FD;
+      border-radius: 12px;
+      padding: 10px 14px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: #0369A1;
+      margin-bottom: 12px;
+    }
+  </style>
+<style>
+  .demo-top { background:#1D3557; color:#fff; border-radius:16px; padding:14px 16px; margin-bottom:12px; }
+  .demo-top h1 { font-size:1.05rem; font-weight:800; margin:0 0 4px; }
+  .demo-top p { font-size:.78rem; margin:0; opacity:.9; line-height:1.55; }
+  #weeklyStatsTableBody td { white-space:nowrap; }
+  .demo-toast { position:fixed; left:50%; bottom:24px; transform:translateX(-50%); background:#1D3557; color:#fff; font-size:.8rem; padding:8px 14px; border-radius:999px; display:none; z-index:10; }
+</style>
+</head>
+<body>
+<div class="container py-3" style="max-width:560px;">
+  <div class="demo-top">
+    <h1>📊 어통조아 관리자 통계 (시안)</h1>
+    <p>선생님 화면의 '주간 현황' 탭에 들어갈 통계예요. <strong>이름과 숫자는 모두 예시</strong>이고, 실제 아이들 기록이 아니에요.<br>
+      위 버튼으로 그룹을 바꾸거나, 아래 [날짜별]을 눌러 보세요.</p>
+  </div>
+  <div class="card card-custom p-3 mb-3">
+<div id="adminViewWeekly" >
+          <div class="mb-2">
+            <div class="admin-filter-group" id="weeklyFilterButtons">
+              <button type="button" class="admin-filter-btn active" onclick="setWeeklyFilter('ALL')">전체</button>
+              <button type="button" class="admin-filter-btn btn-filter-스팍스" onclick="setWeeklyFilter('스팍스')">스팍스</button>
+              <button type="button" class="admin-filter-btn btn-filter-티앤티" onclick="setWeeklyFilter('티앤티')">티앤티</button>
+              <button type="button" class="admin-filter-btn btn-filter-선생님" onclick="setWeeklyFilter('선생님')">선생님</button>
+            </div>
+          </div>
+
+          <!-- 한눈에 보기: 참여율 · 12주 그래프 · 격려가 필요한 아이 · 많이 늘어난 아이 -->
+          <div id="adminInsights" class="mb-3"></div>
+
+          <div class="row g-2 mb-3 align-items-center">
+            <div class="col-8">
+              <select id="weeklyWeekSelector" class="form-select form-select-sm fw-bold border-primary" onchange="renderWeeklyStats()"></select>
+            </div>
+            <div class="col-4 text-end">
+              <button class="btn btn-sm btn-outline-primary w-100" onclick="renderWeeklyStats()"><i class="fa-solid fa-arrows-rotate me-1"></i>조회</button>
+            </div>
+          </div>
+
+          <div class="card p-2 bg-light mb-3">
+            <div class="fw-bold small text-primary mb-1"><i class="fa-solid fa-chart-simple me-1"></i>해당 주간 소속별 총 읽은 장수</div>
+            <div class="d-flex justify-content-around text-center" id="weeklyGroupSummary"></div>
+          </div>
+
+          <div class="admin-filter-group mb-2" id="weeklyViewButtons">
+            <button type="button" class="admin-filter-btn active" onclick="setWeeklyViewMode('sum')">주간 합계</button>
+            <button type="button" class="admin-filter-btn" onclick="setWeeklyViewMode('daily')">날짜별</button>
+          </div>
+
+          <div class="table-responsive">
+            <table class="table table-bordered table-hover align-middle text-center" style="font-size: 0.8rem;">
+              <thead class="table-light" id="weeklyStatsTableHead">
+                <tr>
+                  <th>소속</th>
+                  <th>이름</th>
+                  <th>해당 주간 읽은 장수</th>
+                  <th>최근 읽은 날짜</th>
+                </tr>
+              </thead>
+              <tbody id="weeklyStatsTableBody"></tbody>
+              <tfoot id="weeklyStatsTableFoot"></tfoot>
+            </table>
+          </div>
+        </div>
+  </div>
+</div>
+<div class="demo-toast" id="demoToast"></div>
+<script>
+    const PAST_READ_DATE = '2000-01-01';
+    let adminUsersData = [];
+    let adminWeeklyFilterValue = 'ALL';
+    let currentAdminTab = 'weekly';
+    let insightShowAllQuiet = false, insightShowNever = false, weeklyViewMode = 'sum';
+    const GROUP_ORDER = { '스팍스': 1, '티앤티': 2, '선생님': 3 };
+
+    function escapeHtml(value) {
+      return String(value === undefined || value === null ? '' : value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    function getFullDateStr(item) {
+      return (typeof item === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(item)) ? item : null;
+    }
+
+    function getShortDateStr(item) {
+      const full = getFullDateStr(item);
+      if (!full) return '';
+      if (full === PAST_READ_DATE) return '이전';
+      const parts = full.split('-');
+      return `${parseInt(parts[1], 10)}/${parseInt(parts[2], 10)}`;
+    }
+
+    function getTodayDateParts() {
+      // 모든 사용자의 통독 날짜를 한국 시간(Asia/Seoul) 기준으로 통일한다.
+      const parts = new Intl.DateTimeFormat('en-CA', {
+        timeZone: 'Asia/Seoul', year: 'numeric', month: '2-digit', day: '2-digit'
+      }).formatToParts(new Date());
+      const y = parts.find(p => p.type === 'year').value;
+      const m = parts.find(p => p.type === 'month').value;
+      const d = parts.find(p => p.type === 'day').value;
+      return { short: `${parseInt(m,10)}/${parseInt(d,10)}`, full: `${y}-${m}-${d}` };
+    }
+
+    function getSeoulNow() {
+      const { full } = getTodayDateParts();
+      return new Date(full + 'T12:00:00');
+    }
+
+    function sortUsersByGroup(users) {
+      return [...users].sort((a, b) => {
+        const orderA = GROUP_ORDER[a.group] || 99;
+        const orderB = GROUP_ORDER[b.group] || 99;
+        if (orderA !== orderB) return orderA - orderB;
+        return a.name.localeCompare(b.name, 'ko');
+      });
+    }
+
+    function ymdOf(d) {
+      const m = d.getMonth() + 1, day = d.getDate();
+      return `${d.getFullYear()}-${m < 10 ? '0' : ''}${m}-${day < 10 ? '0' : ''}${day}`;
+    }
+
+    function addDaysTo(d, n) { const x = new Date(d); x.setDate(x.getDate() + n); return x; }
+
+    function daysBetween(fromYmd, toYmd) {
+      return Math.round((new Date(toYmd + 'T12:00:00') - new Date(fromYmd + 'T12:00:00')) / 86400000);
+    }
+
+    function renderAdminInsights() {
+      const box = document.getElementById('adminInsights');
+      if (!box) return;
+
+      const filter = adminWeeklyFilterValue;
+      const users = adminUsersData.filter(u => filter === 'ALL' || u.group === filter);
+      // 격려·성장 목록은 아이들 위주 (선생님 필터를 고르면 선생님만)
+      const kids = users.filter(u => filter === '선생님' || u.group !== '선생님');
+
+      const now = getSeoulNow();
+      const today = ymdOf(now);
+      const dow = now.getDay();
+      const thisMon = addDaysTo(now, (dow === 0 ? -6 : 1) - dow);
+      const daysSoFar = daysBetween(ymdOf(thisMon), today); // 0(월)~6(일)
+
+      // 12주 구간
+      const weeks = [];
+      for (let i = 11; i >= 0; i--) {
+        const mon = addDaysTo(thisMon, -7 * i);
+        weeks.push({ start: ymdOf(mon), end: ymdOf(addDaysTo(mon, 6)), label: `${mon.getMonth() + 1}/${mon.getDate()}`, g: { '스팍스': 0, '티앤티': 0, '선생님': 0 }, total: 0 });
+      }
+      const thisWeekStart = weeks[11].start;
+      const lastWeekStart = weeks[10].start;
+      const lastWeekSameDay = ymdOf(addDaysTo(new Date(lastWeekStart + 'T12:00:00'), daysSoFar));
+      const r28Start = ymdOf(addDaysTo(now, -27));
+      const p28Start = ymdOf(addDaysTo(now, -55));
+
+      let thisWeekCh = 0, lastWeekCh = 0, thisReaders = 0, lastReaders = 0;
+      const info = {};
+
+      users.forEach(u => {
+        let last = '', tw = 0, lw = 0, r28 = 0, p28 = 0;
+        Object.values(u.readChaptersMap || {}).forEach(item => {
+          const d = getFullDateStr(item);
+          if (!d || d === PAST_READ_DATE) return;
+          if (d > last) last = d;
+          if (d >= thisWeekStart && d <= today) tw++;
+          if (d >= lastWeekStart && d <= lastWeekSameDay) lw++;
+          if (d >= r28Start && d <= today) r28++;
+          else if (d >= p28Start && d < r28Start) p28++;
+          if (d >= weeks[0].start) {
+            const w = weeks.find(x => d >= x.start && d <= x.end);
+            if (w) { w.total++; if (w.g[u.group] !== undefined) w.g[u.group]++; }
+          }
+        });
+        thisWeekCh += tw; lastWeekCh += lw;
+        if (tw > 0) thisReaders++;
+        if (lw > 0) lastReaders++;
+        info[u.id] = { last, r28, p28 };
+      });
+
+      const total = users.length;
+      const rate = total ? Math.round(thisReaders / total * 100) : 0;
+      const lastRate = total ? Math.round(lastReaders / total * 100) : 0;
+      const delta = (a, b, unit) => {
+        const d = a - b;
+        if (d > 0) return `<div class="insight-delta up">▲ ${d}${unit}</div>`;
+        if (d < 0) return `<div class="insight-delta down">▼ ${-d}${unit}</div>`;
+        return `<div class="insight-delta same">지난주와 같음</div>`;
+      };
+
+      // ① 숫자 카드
+      let html = `
+        <div class="insight-title"><i class="fa-solid fa-bolt text-warning me-1"></i>이번 주 한눈에 보기
+          <span class="insight-sub">(지난주 같은 요일까지와 비교)</span></div>
+        <div class="insight-cards">
+          <div class="insight-card"><div class="insight-val">${thisReaders}<span style="font-size:.75rem;color:#6c757d;">/${total}명</span></div><div class="insight-lbl">읽은 사람</div>${delta(thisReaders, lastReaders, '명')}</div>
+          <div class="insight-card"><div class="insight-val">${rate}%</div><div class="insight-lbl">참여율</div>${delta(rate, lastRate, '%p')}</div>
+          <div class="insight-card"><div class="insight-val">${thisWeekCh}<span style="font-size:.75rem;color:#6c757d;">장</span></div><div class="insight-lbl">읽은 장</div>${delta(thisWeekCh, lastWeekCh, '장')}</div>
+        </div>`;
+
+      // ② 12주 그래프 (그룹별 쌓은 막대)
+      const colors = { '스팍스': '#F5B5BC', '티앤티': '#A8DABD', '선생님': '#D3D7DC' };
+      const groups = filter === 'ALL' ? ['스팍스', '티앤티', '선생님'] : [filter];
+      const maxV = Math.max(1, ...weeks.map(w => w.total));
+      const W = 340, H = 110, top = 14, bottom = 18, left = 4, slot = (W - left * 2) / 12, bw = slot * 0.42;
+      const chartH = H - top - bottom;
+      let bars = '';
+      weeks.forEach((w, i) => {
+        const x = left + i * slot + (slot - bw) / 2;
+        let y = H - bottom;
+        groups.forEach(g => {
+          const v = w.g[g] || 0;
+          if (!v) return;
+          const h = v / maxV * chartH;
+          y -= h;
+          bars += `<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${bw.toFixed(1)}" height="${h.toFixed(1)}" fill="${colors[g]}" rx="2"><title>${w.label} 주 ${g} ${v}장</title></rect>`;
+        });
+        if (w.total) bars += `<text x="${(x + bw / 2).toFixed(1)}" y="${(y - 3).toFixed(1)}" font-size="8" text-anchor="middle" fill="${i === 11 ? '#1D3557' : '#9AA3AD'}" font-weight="${i === 11 ? 700 : 400}">${w.total}</text>`;
+        if (i % 2 === 1 || i === 11) bars += `<text x="${(x + bw / 2).toFixed(1)}" y="${H - 5}" font-size="8" text-anchor="middle" fill="${i === 11 ? '#1D3557' : '#ADB5BD'}" font-weight="${i === 11 ? 700 : 400}">${i === 11 ? '이번주' : w.label}</text>`;
+      });
+      html += `
+        <div class="insight-box">
+          <div class="insight-title"><i class="fa-solid fa-chart-column text-primary me-1"></i>최근 12주 읽은 장 <span class="insight-sub">(주 시작 날짜)</span></div>
+          <svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="최근 12주 읽은 장 그래프">
+            <line x1="0" y1="${H - bottom}" x2="${W}" y2="${H - bottom}" stroke="#EEF1F4"/>${bars}
+          </svg>
+          ${groups.length > 1 ? `<div class="insight-legend">${groups.map(g => `<span><i style="background:${colors[g]}"></i>${g}</span>`).join('')}</div>` : ''}
+        </div>`;
+
+      // ③ 격려가 필요한 아이 (2주 이상 안 읽음)
+      const quiet = [], never = [];
+      kids.forEach(u => {
+        const last = info[u.id] && info[u.id].last;
+        if (!last) never.push(u);
+        else {
+          const gap = daysBetween(last, today);
+          if (gap >= 14) quiet.push({ u, last, gap });
+        }
+      });
+      quiet.sort((a, b) => a.gap - b.gap);
+      const groupBadge = u => `<span class="badge badge-group-${escapeHtml(u.group)}" style="font-size:.6rem;">${escapeHtml(u.group)}</span>`;
+      const quietShown = insightShowAllQuiet ? quiet : quiet.slice(0, 8);
+      html += `
+        <div class="insight-box">
+          <div class="insight-title"><i class="fa-solid fa-hand-holding-heart me-1" style="color:#E66767;"></i>격려가 필요한 친구 <span class="insight-sub">(2주 넘게 안 읽음 · ${quiet.length}명)</span></div>
+          ${quiet.length ? quietShown.map(q => `
+            <div class="insight-row" onclick="openInsightUser('${escapeHtml(String(q.u.id))}')">
+              ${groupBadge(q.u)}<span class="nm">${escapeHtml(q.u.name)}</span>
+              <span class="meta">마지막 ${getShortDateStr(q.last)} · <strong style="color:#E66767;">${q.gap}일 전</strong></span>
+            </div>`).join('') : '<div class="small text-muted py-1">모두 2주 안에 읽었어요! 👏</div>'}
+          ${quiet.length > 8 ? `<button class="insight-more" onclick="insightShowAllQuiet=!insightShowAllQuiet;renderAdminInsights()">${insightShowAllQuiet ? '접기' : `${quiet.length - 8}명 더 보기`}</button>` : ''}
+          ${never.length ? `<div><button class="insight-more" onclick="insightShowNever=!insightShowNever;renderAdminInsights()">앱에서 아직 한 번도 안 읽은 친구 ${never.length}명 ${insightShowNever ? '▲' : '▼'}</button>
+            ${insightShowNever ? `<div class="small mt-1" style="line-height:1.9;">${never.map(u => `${groupBadge(u)} ${escapeHtml(u.name)}`).join(' &nbsp;')}</div>` : ''}</div>` : ''}
+        </div>`;
+
+      // ④ 많이 늘어난 아이 (최근 4주 vs 그 전 4주)
+      const grew = kids.map(u => ({ u, r: info[u.id] ? info[u.id].r28 : 0, p: info[u.id] ? info[u.id].p28 : 0 }))
+        .filter(x => x.r > x.p).sort((a, b) => (b.r - b.p) - (a.r - a.p)).slice(0, 5);
+      html += `
+        <div class="insight-box">
+          <div class="insight-title"><i class="fa-solid fa-seedling text-success me-1"></i>많이 늘어난 친구 <span class="insight-sub">(최근 4주 vs 그 전 4주)</span></div>
+          ${grew.length ? grew.map((x, i) => `
+            <div class="insight-row" onclick="openInsightUser('${escapeHtml(String(x.u.id))}')">
+              <span style="width:16px;text-align:center;">${['🥇', '🥈', '🥉', '⭐', '⭐'][i]}</span>${groupBadge(x.u)}<span class="nm">${escapeHtml(x.u.name)}</span>
+              <span class="meta">${x.p}장 → ${x.r}장 <strong class="text-success">+${x.r - x.p}</strong></span>
+            </div>`).join('') : '<div class="small text-muted py-1">아직 늘어난 친구가 없어요.</div>'}
+        </div>`;
+
+      box.innerHTML = html;
+    }
+
+    function init15WeeksSelector() {
+      const sel = document.getElementById('weeklyWeekSelector');
+      if (!sel) return;
+      sel.innerHTML = '';
+
+      const now = getSeoulNow();
+      const currentDay = now.getDay();
+      const diffToMonday = (currentDay === 0 ? -6 : 1) - currentDay;
+
+      for (let i = 0; i < 15; i++) {
+        const mon = new Date(now);
+        mon.setDate(now.getDate() + diffToMonday - (i * 7));
+        mon.setHours(0, 0, 0, 0);
+
+        const sun = new Date(mon);
+        sun.setDate(mon.getDate() + 6);
+        sun.setHours(23, 59, 59, 999);
+
+        const month = mon.getMonth() + 1;
+        const weekNum = Math.ceil(mon.getDate() / 7);
+        const label = `${mon.getFullYear()}년 ${month}월 ${weekNum}주차 (${month}/${mon.getDate()} ~ ${sun.getMonth() + 1}/${sun.getDate()})${i === 0 ? ' [이번주]' : ''}`;
+
+        const opt = document.createElement('option');
+        opt.value = i;
+        opt.innerText = label;
+        sel.appendChild(opt);
+      }
+    }
+
+    function setWeeklyViewMode(mode) {
+      weeklyViewMode = mode;
+      document.querySelectorAll('#weeklyViewButtons .admin-filter-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.innerText.trim() === (mode === 'daily' ? '날짜별' : '주간 합계'));
+      });
+      renderWeeklyStats();
+    }
+
+    function setWeeklyFilter(filterGroup) {
+      adminWeeklyFilterValue = filterGroup;
+      document.querySelectorAll('#weeklyFilterButtons .admin-filter-btn').forEach(btn => {
+        btn.classList.remove('active');
+        if (btn.innerText.trim() === (filterGroup === 'ALL' ? '전체' : filterGroup)) {
+          btn.classList.add('active');
+        }
+      });
+      renderWeeklyStats();
+    }
+
+    function renderWeeklyStats() {
+      try { renderAdminInsights(); } catch (e) { console.error('한눈에 보기 오류:', e); }
+      const tbody = document.getElementById('weeklyStatsTableBody');
+      tbody.innerHTML = '';
+
+      const weekIndex = parseInt(document.getElementById('weeklyWeekSelector').value || '0');
+      const now = getSeoulNow();
+      const currentDay = now.getDay();
+      const diffToMonday = (currentDay === 0 ? -6 : 1) - currentDay;
+
+      const targetMon = new Date(now);
+      targetMon.setDate(now.getDate() + diffToMonday - (weekIndex * 7));
+      targetMon.setHours(0, 0, 0, 0);
+
+      const targetSun = new Date(targetMon);
+      targetSun.setDate(targetMon.getDate() + 6);
+      targetSun.setHours(23, 59, 59, 999);
+
+      let groupCountsThisWeek = { '스팍스': 0, '티앤티': 0, '선생님': 0 };
+      const sortedUsers = sortUsersByGroup(adminUsersData);
+      const monYmd = ymdOf(targetMon);
+      const todayYmd = ymdOf(now);
+      const dayYmds = [0, 1, 2, 3, 4, 5, 6].map(i => ymdOf(addDaysTo(targetMon, i)));
+      const dayTotals = [0, 0, 0, 0, 0, 0, 0];
+
+      sortedUsers.forEach(user => {
+        if (adminWeeklyFilterValue !== 'ALL' && user.group !== adminWeeklyFilterValue) return;
+
+        let selectedWeekCount = 0;
+        const dayCounts = [0, 0, 0, 0, 0, 0, 0];
+        let latestFullDate = '';   // 가장 최근에 읽은 날짜 ("YYYY-MM-DD"는 문자열 비교로 최신을 찾을 수 있다)
+
+        const readMap = user.readChaptersMap || {};
+        Object.values(readMap).forEach(item => {
+          const fullDateStr = getFullDateStr(item);
+          if (!fullDateStr) return;
+
+          const itemDate = new Date(fullDateStr + 'T00:00:00');
+          if (itemDate >= targetMon && itemDate <= targetSun) {
+            selectedWeekCount++;
+            const di = daysBetween(monYmd, fullDateStr);
+            if (di >= 0 && di < 7) dayCounts[di]++;
+          }
+          if (fullDateStr > latestFullDate) latestFullDate = fullDateStr;
+        });
+        const lastReadDate = latestFullDate ? getShortDateStr(latestFullDate) : '-';
+
+        if (groupCountsThisWeek[user.group] !== undefined) {
+          groupCountsThisWeek[user.group] += selectedWeekCount;
+        }
+
+        const tr = document.createElement('tr');
+        if (weeklyViewMode === 'daily') {
+          dayCounts.forEach((c, i) => { dayTotals[i] += c; });
+          tr.innerHTML = `
+            <td class="fw-bold text-start" style="white-space:nowrap;"><span class="badge badge-group-${escapeHtml(user.group)} me-1" style="font-size:.55rem;">${escapeHtml(user.group).slice(0, 1)}</span>${escapeHtml(user.name)}</td>
+            ${dayCounts.map((c, i) => `<td class="${dayYmds[i] > todayYmd ? 'text-muted' : ''}" style="padding:4px 2px;${c ? `background:rgba(104,196,150,${Math.min(0.25 + c * 0.08, 0.85)});font-weight:700;` : 'color:#ced4da;'}">${c || (dayYmds[i] > todayYmd ? '' : '·')}</td>`).join('')}
+            <td class="fw-bold">${selectedWeekCount}</td>
+          `;
+        } else {
+          tr.innerHTML = `
+            <td><span class="badge badge-group-${escapeHtml(user.group)}">${escapeHtml(user.group)}</span></td>
+            <td class="fw-bold">${escapeHtml(user.name)}</td>
+            <td><span class="badge bg-primary rounded-pill px-2 py-1">${selectedWeekCount}장</span></td>
+            <td class="small text-muted">${lastReadDate}</td>
+          `;
+        }
+        tbody.appendChild(tr);
+      });
+
+      // 표 머리·바닥: 날짜별 보기면 월~일 칸과 날마다 합계
+      const thead = document.getElementById('weeklyStatsTableHead');
+      const tfoot = document.getElementById('weeklyStatsTableFoot');
+      if (weeklyViewMode === 'daily') {
+        const names = ['월', '화', '수', '목', '금', '토', '일'];
+        thead.innerHTML = `<tr><th class="text-start">이름</th>${dayYmds.map((d, i) => `<th style="padding:4px 2px;${d === todayYmd ? 'background:#E7F1FF;' : ''}${i === 6 ? 'color:#DC3545;' : ''}">${names[i]}<div style="font-size:.6rem;font-weight:400;">${getShortDateStr(d)}</div></th>`).join('')}<th>합계</th></tr>`;
+        tfoot.innerHTML = `<tr class="table-light fw-bold"><td class="text-start">날마다 합계</td>${dayTotals.map(t => `<td style="padding:4px 2px;">${t}</td>`).join('')}<td>${dayTotals.reduce((a, b) => a + b, 0)}</td></tr>`;
+      } else {
+        thead.innerHTML = `<tr><th>소속</th><th>이름</th><th>해당 주간 읽은 장수</th><th>최근 읽은 날짜</th></tr>`;
+        tfoot.innerHTML = '';
+      }
+
+      document.getElementById('weeklyGroupSummary').innerHTML = `
+        <div><span class="badge badge-group-스팍스 me-1">스팍스</span><strong>${groupCountsThisWeek['스팍스']}장</strong></div>
+        <div><span class="badge badge-group-티앤티 me-1">티앤티</span><strong>${groupCountsThisWeek['티앤티']}장</strong></div>
+        <div><span class="badge badge-group-선생님 me-1">선생님</span><strong>${groupCountsThisWeek['선생님']}장</strong></div>
+      `;
+    }
+
+    // 시안에서는 이름을 눌러도 개인 통계 창 대신 안내만 띄운다
+    function openInsightUser(userId) {
+      const u = adminUsersData.find(x => String(x.id) === String(userId));
+      const t = document.getElementById('demoToast');
+      t.textContent = (u ? u.name + ' · ' : '') + '실제 앱에서는 이 친구의 통계 창이 열려요';
+      t.style.display = 'block';
+      clearTimeout(t._h); t._h = setTimeout(() => { t.style.display = 'none'; }, 2200);
+    }
+
+    // ===== 예시 데이터 (오늘 날짜 기준으로 매번 만든다) =====
+    (function makeDemoData() {
+      const names = ['김하늘','이바다','박별','최노을','오나무','문시냇','정새봄','윤구름','장햇살','한달님','서들꽃','강바람','송이슬','임가람','배선생','조선생'];
+      const groups = ['스팍스','스팍스','스팍스','스팍스','스팍스','스팍스','티앤티','티앤티','티앤티','티앤티','티앤티','티앤티','티앤티','스팍스','선생님','선생님'];
+      const lastGap = [0,1,3,20,null,16,2,0,40,5,1,0,25,4,0,2];
+      const rate =    [.45,.5,.35,.3,0,.4,.55,.6,.3,.35,.5,.45,.25,.3,.7,.5];
+      const today = getSeoulNow();
+      let seed = 11; const rnd = () => (seed = (seed * 9301 + 49297) % 233280) / 233280;
+      adminUsersData = names.map((n, i) => {
+        const map = {}; let k = 0;
+        if (lastGap[i] !== null) for (let d = lastGap[i]; d < 90; d++) {
+          let p = rate[i];
+          if (i === 2 && d < 28) p = 0.85;         // 최근에 확 늘어난 친구
+          if (i === 1 && d < 28) p = 0.75;
+          if (rnd() < p) {
+            const dt = addDaysTo(today, -d);
+            const c = 1 + Math.floor(rnd() * 3);
+            for (let j = 0; j < c; j++) map['창세기_' + (++k)] = ymdOf(dt);
+          }
+        }
+        return { id: 'demo' + i, name: n, group: groups[i], readChaptersMap: map, grantedPins: [] };
+      });
+    })();
+
+    init15WeeksSelector();
+    renderWeeklyStats();
+</script>
+</body>
+</html>
