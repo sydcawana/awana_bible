@@ -675,7 +675,7 @@
     <p>선생님 화면의 '주간 현황' 탭에 들어갈 통계예요. <strong>이름과 숫자는 모두 예시</strong>이고, 실제 아이들 기록이 아니에요.<br>
       위 버튼으로 그룹을 바꾸거나, 아래 [날짜별]을 눌러 보세요.</p>
   </div>
-  <div class="card card-custom p-3 mb-3">
+  <div class="card card-custom p-3 mb-3" id="statsCard">
 <div id="adminViewWeekly" >
           <div class="mb-2">
             <div class="admin-filter-group" id="weeklyFilterButtons">
@@ -953,7 +953,10 @@
 
         const month = mon.getMonth() + 1;
         const weekNum = Math.ceil(mon.getDate() / 7);
-        const label = `${mon.getFullYear()}년 ${month}월 ${weekNum}주차 (${month}/${mon.getDate()} ~ ${sun.getMonth() + 1}/${sun.getDate()})${i === 0 ? ' [이번주]' : ''}`;
+        const range = `${month}/${mon.getDate()} ~ ${sun.getMonth() + 1}/${sun.getDate()}`;
+        const yearPrefix = mon.getFullYear() !== now.getFullYear() ? `${mon.getFullYear()}년 ` : '';
+        const name = i === 0 ? '이번 주' : i === 1 ? '지난주' : `${yearPrefix}${month}월 ${weekNum}주`;
+        const label = `${name} · ${range}`;
 
         const opt = document.createElement('option');
         opt.value = i;
@@ -1091,7 +1094,7 @@
         const map = {}; let k = 0;
         if (lastGap[i] !== null) for (let d = lastGap[i]; d < 90; d++) {
           let p = rate[i];
-          if (i === 2 && d < 28) p = 0.85;         // 최근에 확 늘어난 친구
+          if (i === 2 && d < 28) p = 0.85;
           if (i === 1 && d < 28) p = 0.75;
           if (rnd() < p) {
             const dt = addDaysTo(today, -d);

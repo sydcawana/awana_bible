@@ -3018,7 +3018,10 @@
 
         const month = mon.getMonth() + 1;
         const weekNum = Math.ceil(mon.getDate() / 7);
-        const label = `${mon.getFullYear()}년 ${month}월 ${weekNum}주차 (${month}/${mon.getDate()} ~ ${sun.getMonth() + 1}/${sun.getDate()})${i === 0 ? ' [이번주]' : ''}`;
+        const range = `${month}/${mon.getDate()} ~ ${sun.getMonth() + 1}/${sun.getDate()}`;
+        const yearPrefix = mon.getFullYear() !== now.getFullYear() ? `${mon.getFullYear()}년 ` : '';
+        const name = i === 0 ? '이번 주' : i === 1 ? '지난주' : `${yearPrefix}${month}월 ${weekNum}주`;
+        const label = `${name} · ${range}`;
 
         const opt = document.createElement('option');
         opt.value = i;
